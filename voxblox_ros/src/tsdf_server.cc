@@ -432,7 +432,7 @@ void TsdfServer::publishTsdfSurfacePoints() {
                                        surface_distance_thresh, &pointcloud);
 
   pointcloud.header.frame_id = world_frame_;
-  pointcloud.header.stamp = pcl_conversions::toPCL(ros::Time::now())
+  pointcloud.header.stamp = pcl_conversions::toPCL(ros::Time::now());
   surface_pointcloud_pub_.publish(pointcloud);
 }
 
