@@ -53,20 +53,18 @@
 */
 class SecondaryClusteringNode {
  public:
-    SecondaryClusteringNode(ros::Publisher det_pub, ros::Publisher gp_pub,
-            ros::Publisher gp_prior_pub, ros::NodeHandle nh) :
-        det_pub_(det_pub), gp_pub_(gp_pub), gp_prior_pub_(gp_prior_pub), nh_(nh) {
-        gt_line_pub_ = nh_.advertise<visualization_msgs::Marker>("gt_lines", 1);
-    }
-    void set_node_name() {node_name = ros::this_node::getName();}
+	SecondaryClusteringNode(ros::NodeHandle nh) : nh_(nh) {
+		det_pub_ = nh_.advertise<zeus_msgs::Detections3D>("/Object/RawDetections3D", 1);
+		gp_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/Object/GroundPlane3D", 1);
+		gp_prior_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/Object/GroundPlanePrior3D", 1);
+	    gt_line_pub_ = nh_.advertise<visualization_msgs::Marker>("/Object/GroundPlaneLines", 1);
 
-    /*!
-       \brief This callback first extracts the ground plane using RANSAC and then performs Euclidean clustering
-       using a KdTree to extract object clusters. For each cluster of points, a centroid and 3D cuboid is computed
-       which is published as a list in a ROS message.
-       \param scan A 3D pointcloud output by a velodyne LIDAR.
-    */
-    void callback(const sensor_msgs::PointCloud2ConstPtr& scan);
+	    set_node_name();
+	    get_ros_parameters();
+	    initialize_transforms();
+	}
+
+    void set_node_name() {node_name = ros::this_node::getName();}
 
     /*!
        \brief Initializes the static transforms so that they only need to be queried once.
@@ -80,20 +78,31 @@ class SecondaryClusteringNode {
     */
     void get_ros_parameters();
 
+    /*!
+       \brief This callback first extracts the ground plane using RANSAC and then performs Euclidean clustering
+       using a KdTree to extract object clusters. For each cluster of points, a centroid and 3D cuboid is computed
+       which is published as a list in a ROS message.
+       \param scan A 3D pointcloud output by a velodyne LIDAR.
+    */
+    void callback(const sensor_msgs::PointCloud2ConstPtr& scan);
+
  private:
+    ros::NodeHandle nh_;
     ros::Publisher det_pub_;
     ros::Publisher gp_pub_;
     ros::Publisher gp_prior_pub_;
-    ros::NodeHandle nh_;
-    zeus_tf::tfBufferPtr tfBuffer;
-    zeus_tf::tfListenerPtr tfListener;
+    ros::Publisher gt_line_pub_;
+
     std::string node_name = "secondary_clustering";
-    Eigen::Matrix4d Tc2_v = Eigen::Matrix4d::Identity();    /*!< Transform from velodyne to c2 */
+
+    Eigen::Matrix4d Tc2_v = Eigen::Matrix4d::Identity();
+
     std::vector<double> point_cloud_range = {0, 50.0, -15.0, 15.0, -2.0, 0.0};
     // gp param {1.0, 40.0, -10, 10.0, -2.75, -1.75}
     std::vector<double> ground_point_range = {1.0, 40.0, -10, 10.0, -2.75, -1.75};
     std::vector<double> max_object_size = {4.0, 4.0, 4.0};
     std::vector<double> min_object_size = {0.0, 0.0, 0.0};
+
     float randomDownSampleThreshold = 0.5;  // stock 0.5
     bool doRandomDownsample = false;
     float min_object_z = -2.0, max_object_z = 0.5;  // filter out object that gp is not perfect
@@ -104,9 +113,8 @@ class SecondaryClusteringNode {
     int unknown_type = 3;
     Eigen::Matrix4f K = Eigen::Matrix4f::Identity();
     Eigen::Vector4f gp_params = Eigen::Vector4f::Zero();
-    void secondary_clustering(zeus_pcl::PointCloudPtr pc, zeus_msgs::Detections3D &outputDetections);
 
-    ros::Publisher gt_line_pub_;
+    void secondary_clustering(zeus_pcl::PointCloudPtr pc, zeus_msgs::Detections3D &outputDetections);
 };
 
 #endif  // SECONDARY_CLUSTERING_SECONDARY_CLUSTERING_NODE_H

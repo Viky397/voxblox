@@ -99,9 +99,9 @@ void SecondaryClusteringNode::get_ros_parameters() {
 }
 
 void SecondaryClusteringNode::initialize_transforms() {
-    tfBuffer = zeus_tf::tfBufferPtr(new zeus_tf::tfBuffer());
-    tfListener = zeus_tf::tfListenerPtr(new zeus_tf::tfListener(*tfBuffer));
-    zeus_tf::get_transform(tfBuffer, "velodyne", "c2", Tc2_v);
+    //tfBuffer = zeus_tf::tfBufferPtr(new zeus_tf::tfBuffer());
+    //tfListener = zeus_tf::tfListenerPtr(new zeus_tf::tfListener(*tfBuffer));
+    //zeus_tf::get_transform(tfBuffer, "velodyne", "c2", Tc2_v);
 }
 
 void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,

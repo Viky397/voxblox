@@ -86,6 +86,11 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                       pose_corrected_frame_);
   }
 
+  // Initialize clustering
+  clustering_node_.reset(new SecondaryClusteringNode(nh_));
+  //tracking_node_.reset(new KalmanTrackerNode(nh_));
+
+
   // Initialize TSDF Map and integrator.
   tsdf_map_.reset(new TsdfMap(config));
 
