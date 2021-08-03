@@ -88,7 +88,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   // Initialize clustering
   clustering_node_.reset(new SecondaryClusteringNode(nh_));
-  //tracking_node_.reset(new KalmanTrackerNode(nh_));
+  tracking_node_.reset(new KalmanTrackerNode(nh_));
 
 
   // Initialize TSDF Map and integrator.

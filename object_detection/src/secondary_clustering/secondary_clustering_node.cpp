@@ -107,8 +107,10 @@ void SecondaryClusteringNode::initialize_transforms() {
 void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,
     zeus_msgs::Detections3D &outputDetections) {
     std::vector<std::vector<int>> clusters;
-    if (pc->size() > 0)
+    if (pc->size() > 0) {
         zeus_pcl::cluster_point_cloud(pc, min_samples, cluster_tolerance, clusters);
+        std::cout << "Number of clusters: " << clusters.size() << std::endl;
+    }
     for (uint i = 0; i < clusters.size(); i++) {
         zeus_pcl::PointCloudPtr cluster_pts (new zeus_pcl::PointCloud());
         zeus_pcl::extract_points(pc, cluster_pts, clusters[i]);

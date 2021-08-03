@@ -57,7 +57,13 @@ typedef boost::shared_ptr<kalman::KalmanTracker> KalmanPtr;
 */
 class KalmanTrackerNode {
  public:
-    KalmanTrackerNode(ros::NodeHandle& nh, ros::Publisher det_pub) : nh_(nh), det_pub_(det_pub) {}
+    KalmanTrackerNode(ros::NodeHandle& nh) : nh_(nh) {
+    	det_pub_ = nh_.advertise<zeus_msgs::Detections3D>("/Object/Detections3D", 10);
+    	init();
+    }
+
+    void init();
+
     void setKalmanTracker(KalmanPtr kalmantracker_) {kalmantracker = kalmantracker_;}
 
     /*!
@@ -84,7 +90,7 @@ class KalmanTrackerNode {
     ros::NodeHandle nh_;
     ros::Publisher det_pub_;
     KalmanPtr kalmantracker;                                /*!< Pointer to kalman::KalmanTracker object. */
-    std::string world_frame_id = "odom";
+    std::string world_frame_id = "map";
 };
 
 #endif  // OBJECT_TRACKER_OBJECT_TRACKER_NODE_H
