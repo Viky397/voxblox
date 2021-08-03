@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!-- Author: Keenan Burnett -->
+<launch>
+    <!-- SECONDARY CLUSTERING -->
+    <node pkg="object_detection" type="secondary_clustering" name="secondary_clustering" output="screen">
+        <rosparam command="load" file="$(find object_detection)/config/params_lidar.yaml" />
+        <param name="lidar_topic" value="/kimera_semantics_node/surface_pointcloud" />
+        <param name="output_append" value="_secondary" />
+    </node>
+    <!-- OBJECT TRACKER -->
+    <node pkg="object_detection" type="object_tracker" name="object_tracker" output="screen">
+        <rosparam command="load" file="$(find object_detection)/config/params_lidar.yaml" />
+        <rosparam command="load" file="$(find object_detection)/config/params_kalman.yaml" />
+        <param name="camera_frame" value="mono_link" />
+        <param name="det_topic" value="/Object/RawDetections3D" />
+        <param name="det_topic3" value="/Object/RawDetections3D_3" />
+        <param name="det_topic4" value="/Object/RawDetections3D_4" />
+        <param name="det_topic_secondary" value="/Object/RawDetections3D_secondary" />
+	    <param name="det_topic_occupancy" value="/Object/RawDetections3D_occupancy_x" />
+    </node>
+
+ </launch>

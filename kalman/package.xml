@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package>
+  <name>kalman</name>
+  <version>0.0.1</version>
+  <description>This package includes classes for implementing a kalman filter with data association </description>
+  <maintainer email="keenan.burnett@autodrive.utoronto.ca">keenan</maintainer>
+  <author>Keenan Burnett</author>
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>zeus_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>geodesy</build_depend>
+  <build_depend>zeus_pcl</build_depend>
+  <build_depend>roslint</build_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>tf2_geometry_msgs</run_depend>
+  <run_depend>geodesy</run_depend>
+  <run_depend>zeus_pcl</run_depend>
+</package>

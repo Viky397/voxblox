@@ -1,0 +1,302 @@
+/**
+\mainpage
+
+<a href="../../index.html">Back to Homepage</a>
+
+\b This package contains several ROS nodes related to object detection.
+
+\section rosapi ROS API
+
+List of nodes:
+- \b ClusterPublisherNode
+- \b KalmanTrackerNode
+- \b ObjectVisualizerNode
+- \b OccupancyGridNode
+- \b ParkingOccupancyNode
+- \b SecondaryClusteringNode
+
+<!-- ClusterPublisherNode -->
+
+<hr>
+
+\subsection ClusterPublisherNode
+
+ClusterPublisherNode receives raw 2D detections (defined wrt an image plane) and the corresponding 3D LIDAR pointcloud
+and outputs a 3D centroid and cuboid for each bounding box in the c2 frame (if a valid one exists).
+
+Note: This node is duplicated / paired with a particular camera. /Detections2D_3 as input topic and
+/Object/RawDetections3D_3 would correspond to camera 3.
+
+\subsubsection e1 executable_name
+\verbatim
+$ cluster_publisher
+\endverbatim
+
+\subsubsection t ROS topics
+
+Subscribes to:
+- \b "/Detections2D": [zeus_msgs/Detections2D] Other options: /Detections2D_3, /Detections2D_4
+- \b "/velodyne_points": [sensor_msgs/PointCloud2]
+
+Publishes to:
+- \b "/Object/RawDetections3D": [zeus_msgs/Detections3D] Other options: /Object/RawDetections3D_3, /Object/RawDetections3D_4
+
+\subsubsection p ROS parameters
+
+Reads the following parameters from the parameter server
+
+- \b "~camera_frame" : \b [string]
+- \b "~camera_topic" : \b [string]
+- \b "~bb_topic" : \b [string]
+- \b "~lidar_topic" : \b [string]
+- \b "~output_append" : \b [string] This string will be appended to the default output topic.
+- \b "~point_cloud_range" : \b [vector of floats]
+- \b "~MAX_DISTANCE_RANSAC" : \b [float]
+- \b "~MAX_ITERATIONS_RANSAC" : \b [int]
+- \b "~CLUSTER_TOLERANCE" : \b [float]
+- \b "~MIN_SAMPLES" : \b [int]
+- \b "~min_height_ped" : \b [float]
+- \b "~max_height_ped" : \b [float]
+- \b "~max_object_size" : \b [vector of floats]
+- \b "~min_object_size" : \b [vector of floats]
+- \b "~max_object_z" : \b [float]
+- \b "~min_object_z" : \b [float]
+
+<!-- KalmanTrackerNode -->
+
+<hr>
+
+\subsection KalmanTrackerNode
+
+KalmanTrackerNode receives raw detections output in the c2 frame (dets) and odomety messages (odom) and outputs
+filtered object tracks in the world frame odom.
+
+A linear Kalman Filter is used to update an object track position and velocity.
+A HiddenMarkovModel is used to filter the object states temporally.
+We maintain a confidence level for each object track.
+
+\subsubsection e2 executable_name
+\verbatim
+$ object_tracker
+\endverbatim
+
+\subsubsection t2 ROS topics
+
+Subscribes to:
+- \b "/Object/RawDetections3D": [zeus_msgs/Detections3D]    3D detections from camera 1
+- \b "/Object/RawDetections3D_3": [zeus_msgs/Detections3D]  3D detections from camera 3
+- \b "/Object/RawDetections3D_4": [zeus_msgs/Detections3D]  3D detections from camera 4
+- \b "/Object/RawDetections3D_secondary": [zeus_msgs/Detections3D]  3D detections from secondary clustering
+- \b "/Object/RawDetections3D_occupancy": [zeus_msgs/Detections3D]  3D detections from occupancy grid clustering
+- \b "/navsat/odom": [nav_msgs/Odometry]
+
+Publishes to:
+- \b "/Object/Detections3D": [zeus_msgs/Detections3D]
+
+\subsubsection p2 ROS parameters
+
+Reads the following parameters from the parameter server
+
+- \b "~det_topic" : \b [string]
+- \b "~det_topic3" : \b [string]
+- \b "~det_topic4" : \b [string]
+- \b "~det_topic_secondary" : \b [string]
+- \b "~det_topic_occupancy" : \b [string]
+- \b "~scale" : \b [float]
+- \b "~relative" : \b [float]
+- \b "~Q" : \b [float] Process noise for KF
+- \b "~R" : \b [float] Measurement noise for KF
+- \b "one_d_kalman_gains" : \b [vector of floats]
+- \b "point_cloud_range" : \b [vector of floats]
+- \b "confidence_drop" : \b [float]
+- \b "metricGate" : \b [float]
+- \b "metric_thres" : \b [float]
+- \b "delete_time" : \b [float]
+- \b "cost_alpha" : \b [float]
+- \b "cost_beta" : \b [float]
+- \b "unknown_type" : \b [int]
+- \b "types" : \b [vector of ints]
+- \b "A_hmm" : \b [vector of floats]
+- \b "C_hmm" : \b [vector of floats]
+- \b "pi_hmm" : \b [vector of floats]
+
+<!-- ObjectVisualizerNode -->
+
+<hr>
+
+\subsection ObjectVisualizerNode
+
+ObjectVisualizerNode receives 3D object detections (which may be the output of a tracker), as well as the
+corresponding LIDAR pointcloud, camera image, and Odometry message. This node outputs two visualizations of objects,
+one in the perspective view and one in the Birds Eye View (BEV).
+
+\subsubsection e3 executable_name
+\verbatim
+$ object_visualizer
+\endverbatim
+
+\subsubsection t3 ROS topics
+
+Subscribes to:
+- \b "/Object/Detections3D": [zeus_msgs/Detections3D]
+- \b "/velodyne_points": [sensor_msgs/PointCloud2]
+- \b "/navsat/odom": [nav_msgs/Odometry]
+- \b "/blackfly/image_color": [sensor_msgs/Image]
+
+Publishes to:
+- \b "/Debug/PerspObjects": [sensor_msgs/Image]
+- \b "/Debug/BevObjects": [sensor_msgs/Image]
+
+\subsubsection p3 ROS parameters
+
+Reads the following parameters from the parameter server
+
+- \b "~camera_frame" : \b [string]
+- \b "~camera_topic" : \b [string]
+- \b "~bb_topic" : \b [string]
+- \b "~output_append" : \b [string] This string will be appended to the default output topic.
+- \b "~lidar_topic" : \b [string]
+- \b "~map_name" : \b [string]
+- \b "~P" : \b [vector of floats] Camera 1 projection matrix
+- \b "~P2" : \b [vector of floats] Camera 2 projection matrix
+- \b "~P3" : \b [vector of floats] Camera 3 projection matrix
+- \b "~P4" : \b [vector of floats] Camera 4 projection matrix
+- \b "~point_cloud_range" : \b [vector of floats]
+- \b "~MAX_DISTANCE_RANSAC" : \b [float]
+- \b "~MAX_ITERATIONS_RANSAC" : \b [int]
+- \b "~GROUND_KALMAN_GAIN" : \b [float]
+- \b "~viz_divide" : \b [float]
+- \b "~SHOW_RAW_DETS" : \b [int]
+- \b "~SHOW_POINTS" : \b [int]
+- \b "~SHOW_CUBES" : \b [int]
+- \b "~SHOW_MAP" : \b [int]
+- \b "~SHOW_DETAILED_TEXT" : \b [int]
+- \b "~meter_to_pixel" : \b [float]
+- \b "~unknown_type" : \b [int]
+
+<!-- OccupancyGridNode -->
+
+<hr>
+
+\subsection OccupancyGridNode
+
+OccupancyGridNode receives LIDAR pointclouds and outputs 3D object centroids and cuboids based on an occupancy grid.
+Objects are obtained through connected-component clustering on the occupancy grid.
+The occupancy grid at each time instance is published for debug purposes.
+
+\subsubsection e4 executable_name
+\verbatim
+$ occupancy_grid
+\endverbatim
+
+\subsubsection t4 ROS topics
+
+Subscribes to:
+- \b "/velodyne_points": [sensor_msgs/PointCloud2]
+
+Publishes to:
+- \b "/Object/RawDetections3D_occupancy": [zeus_msgs/Detections3D]
+
+\subsubsection p4 ROS parameters
+
+Reads the following parameters from the parameter server
+
+- \b "~lidar_topic" : \b [string]
+- \b "~output_append" : \b [string] This string will be appended to the default output topic.
+- \b "~point_cloud_range" : \b [vector of floats]
+- \b "~MIN_SAMPLES_SECONDARY" : \b [int]
+- \b "~MAX_DISTANCE_RANSAC" : \b [float]
+- \b "~MAX_ITERATIONS_RANSAC" : \b [int]
+- \b "~GROUND_KALMAN_GAIN" : \b [float]
+- \b "~max_object_size" : \b [vector of floats]
+- \b "~min_object_size" : \b [vector of floats]
+- \b "~max_object_z" : \b [float]
+- \b "~min_object_z" : \b [float]
+- \b "~unknown_type" : \b [int]
+- \b "~alpha" : \b [float]
+- \b "tolerance" : \b [float]
+- \b "Tm" : \b [float]
+- \b "Tm_small" : \b [float]
+- \b "Tb" : \b [float]
+- \b "Trmse" : \b [float]
+- \b "Tdprev" : \b [float]
+- \b "neighbor_size" : \b [int]
+- \b "grid_size" : \b [float]
+- \b "ground_extract_method" : \b [int]
+
+<!-- ParkingOccupancyNode -->
+
+<hr>
+
+\subsection ParkingOccupancyNode
+
+ParkingOccupancyNode receives 3D LIDAR pointclouds and odometry messages and determines the occupancy of parking
+lots that are within range of the LIDAR. This occupancy is published to a ROS message.
+
+\subsubsection e5 executable_name
+\verbatim
+$ parking_occupancy
+\endverbatim
+
+\subsubsection t5 ROS topics
+
+Subscribes to:
+- \b "/velodyne_points": [sensor_msgs/PointCloud2]
+- \b "/navsat/odom": [nav_msgs/Odometry]
+
+Publishes to:
+- \b "/ParkingOccupancy": [zeus_msgs/ParkingOccupancy]
+- \b "/Debug/ParkingOccupancy": [sensor_msgs/Image]
+
+\subsubsection p5 ROS parameters
+
+Reads the following parameters from the parameter server
+
+- \b "~map_name" : \b [string]
+- \b "~point_cloud_range" : \b [vector of floats]
+- \b "~MAX_DISTANCE_RANSAC" : \b [float]
+- \b "~MAX_ITERATIONS_RANSAC" : \b [int]
+- \b "~GROUND_KALMAN_GAIN" : \b [float]
+- \b "~LEN_FILTER" : \b [int]
+- \b "~N_OCCUPIED_THRES" : \b [int]
+
+<!-- SecondaryClusteringNode -->
+
+<hr>
+
+\subsection SecondaryClusteringNode
+
+SecondaryClusteringNode receives 3D LIDAR pointclouds and outputs 3D object centroids and cuboids using Euclidean clustering.
+
+\subsubsection e5 executable_name
+\verbatim
+$ secondary_clustering
+\endverbatim
+
+\subsubsection t6 ROS topics
+
+Subscribes to:
+- \b "/velodyne_points": [sensor_msgs/PointCloud2]
+
+Publishes to:
+- \b "/Object/RawDetections3D_secondary": [zeus_msgs/Detections3D]
+
+\subsubsection p6 ROS parameters
+
+Reads the following parameters from the parameter server
+
+- \b "~lidar_topic" : \b [string]
+- \b "~output_append" : \b [string] This string will be appended to the default output topic.
+- \b "~secondary_cloud_range" : \b [vector of floats]
+- \b "~MIN_SAMPLES_SECONDARY" : \b [int]
+- \b "~MAX_DISTANCE_RANSAC" : \b [float]
+- \b "~MAX_ITERATIONS_RANSAC" : \b [int]
+- \b "~GROUND_KALMAN_GAIN" : \b [float]
+- \b "~CLUSTER_TOLERANCE_SECONDARY" : \b [float]
+- \b "~max_object_size" : \b [vector of floats]
+- \b "~min_object_size" : \b [vector of floats]
+- \b "~max_object_z" : \b [float]
+- \b "~min_object_z" : \b [float]
+- \b "~unknown_type" : \b [int]
+
+*/

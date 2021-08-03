@@ -1,0 +1,15 @@
+float64 x
+float64 y
+float64 z
+float64 x_dot
+float64 y_dot
+float32 l
+float32 w
+float32 h
+float32 yaw
+int32 type
+float32 confidence
+float32 objectness
+float32[] class_confidences
+int32 ID
+int32 camera

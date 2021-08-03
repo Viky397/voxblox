@@ -1,0 +1,41 @@
+#_____Model information_____
+RELATIVE_DIR: true
+PKG_NAME: 'object_detection'
+MODEL_DIRECTORY: /models/
+MODEL_NAME: scale-2019-05-19-aug_384x1248_noMean_bgr_R5
+MODEL_TYPE: squeezedet
+#______ROS Topic Names______
+IMAGE_TOPIC: /blackfly/image_color
+DETECTION_TOPIC: /Detections2D
+VIZ_TOPIC: visualization_image_1
+#____Image preprocessing____
+PRECROP_WIDTH: 2448
+PRECROP_HEIGHT: 700
+PRECROP_LX: 0
+PRECROP_LY: 800
+NUM_CHANNELS: 3
+B_MEAN: 103.939
+G_MEAN: 116.779
+R_MEAN: 123.68
+#____Object detection parameters____
+NUM_CLASSES: 3
+TOP_N_DETECTIONS: 64
+NMS_THRESHOLD: 0.01
+PROB_THRESHOLD: 0.1
+ANCHORS: [20.81060822,  54.39258265,
+          77.5726162,   200.9198654,
+          211.49498911, 532.33371429,
+          44.39052538,  117.88580169,
+          31.16956495,  83.25716811,
+          12.9598824,   32.47708914,
+          100.59461685, 271.44206974,
+          61.0063593,   152.63002079,
+          142.19281046, 389.8768254]
+#____Visualization parameters___
+LABELS: ['Car', 'Pedestrian', 'Cyclist']
+
+thread_num: 8
+camera: 1
+
+FPGAID: 1
+ACCELERATION_DEVICE: FPGA

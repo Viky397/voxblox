@@ -1,0 +1,9 @@
+int32 cx
+int32 cy
+int32 h
+int32 w
+int32 type
+float64 confidence
+int32 camera
+float32 objectness
+float32[] class_confidences

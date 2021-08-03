@@ -1,0 +1,249 @@
+/**
+\mainpage
+
+<a href="../../index.html">Back to Homepage</a>
+
+\b This package offers a library for linear Kalman filters, data association, hidden Markov Models, and converting
+from ROS transforms into familiar 4x4 transform matrices (T = [R, T; 0 0 0 1])
+
+The kalman::KalmanTracker class provides an interface for tracking and maintaining a list of objects (in either 2D or 3D).
+Internally, object states are filtered using the kalman::HiddenMarkovModel class.
+
+An important concept is understand is 'confidences'. Each object possesses a confidence level, which is mainly a
+temporally smoothed confidence where the confidence output by the DNN detector are used as the detections.
+Object confidences decay exponentially as a function of time when there are no detections. All objects should be
+published, so that the Planner can make the decision about what objects to react to (perhaps by thresholding on confidence.)
+
+Given a confidence level for each detection, or a distribution over class scores (output by a softmax), the HiddenMarkovModel
+will return the most likely object state when it is queried.
+
+The tracker is asynchronous, meaning that a single tracker can handle multiple input nodes publishing detections
+asynchronously.
+
+Each Object posseses the following:
+- x_hat: \f$[x, y, z, \dot{x}, \dot{y}]\f$ which represents the 3D position and 2D velocity in the (x-y) plane).
+- P_hat: covariance of the state above.
+- w,l,h: shape of the 3D bounding box
+- type: which state the object is most likely in.
+- confidence: (0-1)
+- ID: a unique identifier
+- hmm: a pointer to a HiddenMarkovModel object tracking the object state.
+
+Other Libraries:
+- <a href="./association_8hpp.html">association.hpp</a> : optimal and greedy data association given a cost matrix
+- <a href="./transform__utils_8hpp.html">transform_utils.hpp</a> : convert ROS transforms into familiar 4x4 transform matrices
+
+\section linear Kalman Filters
+
+The system is defined by a linear, time-varying model:
+
+\f{eqnarray}{
+    \textbf{x}_k &= \textbf{A}_{k-1}\textbf{x}_{k-1} + \textbf{v}_k + \textbf{w}_k, k = 1...K \\
+    \textbf{y}_k &= \textbf{C}_k\textbf{x}_k + \textbf{n}_k, k = 0...K
+\f}
+
+where k is a discrete time index. The variables have the following meanings:
+
+\f{eqnarray}{
+    \text{system state} &: &&\textbf{x}_k \in \mathbb{R}^N \\
+    \text{initial state} &: &&\textbf{x}_0 \in \mathbb{R}^N \sim \mathcal{N}(\check{\textbf{x}}_0, \check{\textbf{P}}_0)  \\
+    \text{input} &: &&\textbf{v}_k \in \mathbb{R}^N \\
+    \text{process noise} &: &&\textbf{w}_k \in \mathbb{R}^N \sim \mathcal{N}(\textbf{0}, \textbf{Q}_k) \\
+    \text{measurement} &: &&\textbf{y}_k \in \mathbb{R}^M \\
+    \text{measurement noise} &: &&\textbf{n}_k \in \mathbb{R}^M \sim \mathcal{N}(\textbf{0}, \textbf{R}_k)\\
+\f}
+
+In General, the linear recursive Kalman filter equations are given as:
+
+\f{eqnarray}{
+    \check{\textbf{x}}_k &= \textbf{A}_{k-1} \hat{\textbf{x}}_{k-1} + \textbf{v}_k \\
+    \check{\textbf{P}}_k &= \textbf{A}_{k-1} \hat{\textbf{P}}_{k-1} \textbf{A}_{k-1}^T + \textbf{Q}_k  \\
+    \textbf{K}_k &= \check{\textbf{P}}_{k} \textbf{C}_k^T (\textbf{C}_k \check{\textbf{P}}_{k}  \textbf{C}_k^T + \textbf{R}_k)^{-1} \\
+    \hat{\textbf{P}}_k &= (\textbf{1} - \textbf{K}_k \textbf{C}_k) \check{\textbf{P}}_k \\
+    \hat{\textbf{x}}_k &= \check{\textbf{x}}_k + \textbf{K}_k (\textbf{y}_k - \textbf{C}_k \check{\textbf{x}}_k)
+\f}
+
+Often, the motion model \f$\textbf{A}\f$ and the observation model \f$\textbf{C}\f$ do not change over time and can be represented as constant matrices.
+Also note that the process noise \f$\textbf{w}_k\f$ and measurement noise \f$\textbf{n}_k\f$ are approximated by zero-mean Gaussians.
+If you have a way of estimating these values, great. If not, we will use the diagonal elements of noise covariance matrices,
+\f$\textbf{Q}_k\f$ and \f$\textbf{R}_k\f$, as tuning parameters to weight the relative importance of the propagated state vs. new measurements.
+It is preferred that these noise matrices are diagonal. It is worth checking whether your Kalman gain \f$\textbf{K}\f$ ends up being something diagonal.
+If that is the case, you might consider abandoning the consideration of the noise values altogether and simply tune the values of your Kalman matrix directly.
+
+Consider the following example of a point mass in a 2D plane where we are trying to estimate position and velocity but we can only get measurements of the position:
+
+\f{align}{
+    \textbf{x}_k &= [x, y, \dot{x}, \dot{y}]^T \\
+    \textbf{y}_k &= [x, y]^T \\
+    \textbf{A} &=   1~ & 0~ & T~ & 0 \\
+                    0~ & 1~ & 0~ & T \\
+                    0~ & 0~ & 1~ & 0 \\
+                    0~ & 0~ & 0~ & 1 \\
+    \textbf{C} &= \begin{bmatrix}
+                    1~ & 0~ & 0~ & 0 \\
+                    0~ & 1~ & 0~ & 0 \\
+                    \end{bmatrix} \\
+    \textbf{Q} &= \begin{bmatrix}
+                    \sigma_1^2~ & 0~ & 0~ & 0 \\
+                    0~ & \sigma_1^2~ & 0~ & 0 \\
+                    0~ & 0~ & \sigma_2^2~ & 0 \\
+                    0~ & 0~ & 0~ & \sigma_2^2
+                    \end{bmatrix} \\
+    \textbf{R} &= \begin{bmatrix}
+                    \sigma_3^2~ & 0 \\
+                    0~ & \sigma_3^2 \\
+                    \end{bmatrix} \\
+\f}
+
+Note that \f$\textbf{A}\f$ represents a constant velocity motion model. This basically means that we are assuming
+that the velocity of what we are trying to measure is approximately constant at the time scales that we are able to
+measure the position. Because of this, the change in velocity of the object will entirely be captured by the noise
+parameter \f$\sigma_2\f$. Note that without any prior information about this system, we can simply treat the diagonal
+elements of the noise matrices as tuning parameters, or unknowns that have yet to be determined. Making \f$\sigma_3 >>
+(\sigma_1, \sigma_2)\f$ means that we think our measurements are not very reliable, and we should rely on propagating the
+ state instead, or perhaps we prioritize a smooth output signal that lags behind the true value, rather
+  than one that is noisy and keeps up with the measurements. A good way to use these matrices is to decide on absolute
+  values for \f$\sigma_1\f$ and \f$sigma_2\f$ and then assign a value for \f$\sigma_3\f$ relative to the other two. \f$\sigma_1\f$ and
+  \f$\sigma_2\f$ let us encode how much these variable are liable to change from one time step to the next, outside
+  of the variation is that is already encoded in the motion model. Perhaps the larger these values are, the more we
+  are saying: I do not know what the actual motion model should be.
+
+If the time step between measurements (T) is fixed, the Kalman gain may actually converge after a few time steps. Also
+note that you might not care about the covariance \f$\textbf{P}\f$, so you might want to keep track of it only so far as it
+factors into your Kalman gain, otherwise discard it. If you arere actually doing this the correct way and your noise
+values are calibrated, then \f$\textbf{P}\f$ should actually correspond to the uncertainty in the state.
+\f$\textbf{P}\f$ is defined as the covariance of the state output by the Kalman filter. Anyways, here is the linear
+Kalman filter equations for the example above:
+
+\f{eqnarray}
+    \check{\textbf{x}}_k &= \textbf{A} \hat{\textbf{x}}_{k-1} \\
+    \check{\textbf{P}}_k &= \textbf{A} \hat{\textbf{P}}_{k-1} \textbf{A}^T + \textbf{Q}  \\
+    \textbf{K}_k &= \check{\textbf{P}}_{k} \textbf{C}^T (\textbf{C} \check{\textbf{P}}_{k}  \textbf{C}^T + \textbf{R})^{-1} \\
+    \hat{\textbf{P}}_k &= (\textbf{1} - \textbf{K}_k \textbf{C}) \check{\textbf{P}}_k \\
+    \hat{\textbf{x}}_k &= \check{\textbf{x}}_k + \textbf{K}_k (\textbf{y}_k - \textbf{C} \check{\textbf{x}}_k)
+\f}
+
+What about a 1D variable? Or a bunch of 1D variables? That is even easier! If you have a collection of 1D variables
+that are independent of each other, do not just throw them into a state vector and call it a day. If they are
+independent, then keep them that way! Computing their Kalman gain and state update together is just silly. Proceed with
+this example where you have a 1D variable and you do not know anything about the motion model (so we will have to model
+ the variation in the signal from one time step to the next as noise):
+
+\f{eqnarray}
+    \textbf{x}_k ~(your~state~variable)  \\
+    \textbf{y}_k ~(your~measurement~variable) \\
+    \textbf{A} &= 1 \\
+    \textbf{C} &= 1 \\
+    \textbf{Q} &= \sigma_1^2 \\
+    \textbf{R} &= \sigma_2^2
+\f}
+
+Okay, so now the Kalman update equations look really simple:
+
+\f{eqnarray}
+    \check{\textbf{x}}_k &= \hat{\textbf{x}}_{k-1} \\
+    \check{\textbf{P}}_k &= \hat{\textbf{P}}_{k-1} + \textbf{Q}  \\
+    \textbf{K}_k &= \check{\textbf{P}}_{k}(\check{\textbf{P}}_{k} + \textbf{R})^{-1} \\
+    \hat{\textbf{P}}_k &= (\textbf{1} - \textbf{K}_k) \check{\textbf{P}}_k \\
+    \hat{\textbf{x}}_k &= \check{\textbf{x}}_k + \textbf{K}_k (\textbf{y}_k - \check{\textbf{x}}_k) \label{kalman1d}
+\f}
+
+\section Hidden Markov Models
+
+In a hidden Markov model (HMM), the system being modeled is assumed to be a Markov process with hidden states.
+In our example, we will denote this Markov process as \f$Z\f$, where \f$Z\f$ is considered a hidden variable possessing
+hidden states. Another name for a hidden variable is a latent variable. It is important to the note that hidden
+variables are not directly observable, or are not contained in the dataset being considered.
+
+The joint distribution of a Hidden Markov Model is given by
+
+\f{eqnarray}
+    p(\textbf{x}_{1:T}, \textbf{z}_{1:T}) &= p(\textbf{z}_1) \prod_{t=2}^T p(\textbf{z}_t | \textbf{z}_{t-1}) \prod_{t=1}^T p(\textbf{x}_t | \textbf{z}_t)  .
+\f}
+
+We wish to be able to predict the next value in a sequence given observations of the previous values. Intuitively,
+we expect that recent observations are likely to be more informative than older observations in predicting future values.
+It would be impractical to consider a general dependence of future observations on all previous observations because the
+complexity of such a model would grow without limit as the number of observations increases. This leads us to Markov models
+in which we assume that future predictions are independent of all but the most recent observations. (Bishop, 2006)
+
+Although such models are tractable, they are also severely limited. We can obtain a more general framework, while still
+retaining tractability, by the introduction of latent variables, leading to state space models. Two important
+examples of state space models include hidden Markov models, in which the latent variables are discrete,
+and linear dynamical systems, in which the latent variables are Gaussian. (Bishop, 2006)
+
+To summarize, we want to build a model for sequences that is not limited by the Markov assumption, yet can be specified
+using a limited number of parameters. We can achieve this by introducing additional latent variables to permit a rich
+class of models to be constructed out of simple components. (Bishop, 2006)
+
+We denote observations by \f$\textbf{x}_t\f$, and the corresponding latent variable as \f$\textbf{z}_t\f$. We assume
+that the latent variables form a Markov chain, giving rise to a state space model. The latent variables within the
+Markov chain satisfy the Markov property such that
+
+\f{eqnarray}
+    (\textbf{z}_{t+1} \perp \textbf{z}_{t-1} ) | \textbf{z}_t.
+\f}
+
+If the latent variables are discrete, we obtain a hidden Markov model. If both the latent and observed variables are
+Gaussian, then we obtain a linear dynamical system.
+
+The probability distribution of \f$\textbf{z}_t\f$ depends on the state of the previous latent variable
+\f$\textbf{z}_{t-1}\f$ through a conditional distribution \f$p(\textbf{z}_t | \textbf{z}_{t-1})\f$. Since the latent
+ variables are K-dimensional binary variables, this conditional distribution corresponds to a table of numbers denoted
+ by \f$\textbf{A}\f$, the elements of which are transition probabilities. These are given by \f$\textbf{A}(i, j) \equiv p(\textbf{z}_t = i | \textbf{z}_{t-1} = j)\f$.
+ Note that since these are probabilities, \f$0 \leq  \textbf{A}(i, j) \leq 1\f$ with \f$\sum_i \textbf{A}(i, j) = 1\f$.
+
+The initial latent node \f$\textbf{z}_1\f$ is special in that it does not have a parent node. Its marginal distribution
+\f$p(\textbf{z}_1)\f$ is represented by a vector of probabilities \f$\bm{\pi}\f$ with elements \f$\bm{\pi}(j) \equiv p(\textbf{z}_1(j) = 1)\f$
+ such that \f$\sum_j \bm{\pi}(j) = 1\f$.
+
+The specification of the probabilistic model is completed by defining the conditional distributions of the observed variables
+\f$p(\textbf{x}_t | \textbf{z}_t)\f$. These are known as emission probabilities or output probabilities. If \f$\textbf{x}\f$
+is discrete, the output probabilities correspond to a table of probabilities denoted by \f$\textbf{C}\f$ where \f$\textbf{C}(k,l) = p(\textbf{x}_t = l | \textbf{z}_t = k)\f$.
+Again, since these are probabilities, \f$0 \leq \textbf{C}(k,l) \leq 1\f$ and \f$\sum_k \textbf{C}(k,l) = 1\f$.
+
+The parameters of the distributions that form a hidden Markov model can be learned from training data using Maximum Likelihood Estimation.
+This can be done using an approach based on Expectation-Maximization (Bishop, 2006). The parameters of the
+hidden Markov model can also be treated as tuning parameters.
+
+\subsection The Forwards Algorithm
+
+This formulation of the Forwards Algorithm is taken from (Murphy, 2012).
+
+The algorithm has two steps. First is the prediction step, in which we compute the one-step-ahead predictive density. This acts as the new prior for time t:
+
+\f{eqnarray}
+    p(z_t = j | \textbf{x}_{1:t-1}) = \sum_i p(z_t = j | z_{t - 1}) p(z_{t -1} = i | \textbf{x}_{1:t-1})
+\f}
+
+Next comes the update step, in which we absorb the observed data from time t using Bayes rule and the Markov property:
+
+\f{eqnarray}
+    \alpha_t(j) &\equiv p(z_t = j | \textbf{x}_{1:t}) =  p(z_t = j | \textbf{x}_t , \textbf{x}_{1:t-1}) \\
+                &= \frac{1}{Z_t} p(z_t = j | \textbf{x}_{1:t-1}) p(\textbf{x}_t | z_t = j)
+\f}
+
+where the normalization constant is given by
+
+\f{eqnarray}
+    Z_t \equiv p(\textbf{x}_t | \textbf{x}_{1:t-1}) = \sum_j p(z_t = j | \textbf{x}_{1:t-1}) p(\textbf{x}_t | z_t = j)
+\f}
+
+The distribution \f$p(z_t = j | \textbf{x}_{1:t})\f$ is called the (filtered) belief state at time t, and is a
+vector of K numbers, often denoted by \f$\bm{\alpha}_t\f$. In matrix notation, we can write the update in the following
+ simple form:
+
+\f{eqnarray}
+     \bm{\alpha}_t \propto \textbf{c}_t \odot (\textbf{A} \bm{\alpha}_{t-1})
+\f}
+
+where \f$\textbf{c}_t(j) = p(\textbf{x}_t | z_t = j)\f$ is the local evidence at time t,
+\f$\textbf{A}(i,j) = p(\textbf{z}_t = i | \textbf{z}_{t-1} = j)\f$ is the transition matrix, and \f$\textbf{u} \odot \textbf{v}\f$ represents elementwise vector multiplication.
+
+In addition to computing the hidden states, we can use this algorithm to compute the log probability of the evidence:
+
+\f{eqnarray}
+    log~ p(\textbf{x}_{1:T} | \bm{\theta}) = \sum_{t=1}^{T} \text{log}~ p(\textbf{x}_{t} | \textbf{x}_{t-1}) = \sum_{t=1}^{T} \text{log}~ Z_t
+\f}
+
+*/

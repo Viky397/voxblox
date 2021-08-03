@@ -30,6 +30,9 @@
 #include "voxblox_ros/ptcloud_vis.h"
 #include "voxblox_ros/transformer.h"
 
+#include "secondary_clustering/secondary_clustering_node.h"
+#include "object_tracker/object_tracker_node.h"
+
 namespace voxblox {
 
 constexpr float kDefaultMaxIntensity = 100.0;
@@ -227,6 +230,11 @@ class TsdfServer {
   /// Subscriber settings.
   int pointcloud_queue_size_;
   int num_subscribers_tsdf_map_;
+
+  // Clustering and matching
+  std::unique_ptr<SecondaryClusteringNode> clustering_node_;
+  std::unique_ptr<KalmanTrackerNode> tracking_node_;
+
 
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;

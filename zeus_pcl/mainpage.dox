@@ -1,0 +1,14 @@
+/**
+\mainpage
+
+<a href="../../index.html">Back to Homepage</a>
+
+\b This package provides a library for working with 2D and 3D pointclouds. This library is meant to replace PCL.
+Many of the methods provided are more efficient than the publicly available PCL versions.
+
+The main header file for this library is: <a href="./zeus__pcl_8hpp.html">zeus_pcl.hpp</a>
+
+Other libraries:
+- <a href="./zeus__vis_8hpp.html">zeus_vis.hpp</a> : create visualizations from pointclouds.
+
+*/

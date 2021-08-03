@@ -1,0 +1,48 @@
+# Black fly camera projection matrix
+P: [1449.144043, 0.000000, 1199.158041, 0.000000,
+    0.000, 1456.590741, 1036.123288, 0.000000,
+    0.0, 0.0, 1.000000, 0.000000,
+    0.0, 0.0, 0.0, 1.0]
+P2: [4763.541992, 0.000000, 1200.497496, 0.000000,
+     0.000000, 4792.670898, 1040.733783, 0.000000,
+     0.000000, 0.000000, 1.000000, 0.000000,
+     0.000000, 0.000000, 0.000000, 1.000000]
+P3: [1449.144043, 0.000000, 1199.158041, 0.000000,
+    0.000, 1456.590741, 1036.123288, 0.000000,
+    0.0, 0.0, 1.000000, 0.000000,
+    0.0, 0.0, 0.0, 1.0]
+P4: [1449.144043, 0.000000, 1199.158041, 0.000000,
+    0.000, 1456.590741, 1036.123288, 0.000000,
+    0.0, 0.0, 1.000000, 0.000000,
+    0.0, 0.0, 0.0, 1.0]
+# BEV Shape Parameters
+point_cloud_range: [-2.0, 40.0, -15.0, 15.0, -2.0, 1.0]   # xmin, xmax, ymin, ymax, zmin, zmax
+# Object size limits
+max_object_size: [3.0, 3.0, 3.0]        # max_l, max_w, max_h
+min_object_size: [0.0, 0.0, 0.4]        # smallest alowed object size
+max_object_z: 0.5                       # max height of an object relative to velodyne
+min_object_z: -2.0                      # min height of an object relative to velodyne
+# RANSAC Tuning Parameters
+MAX_DISTANCE_RANSAC: 0.25               # Max distance from RANSAC plane fit
+MAX_ITERATIONS_RANSAC: 25
+GROUND_KALMAN_GAIN: 0.27                # x_hat = x_check + k * (y - x_check)
+# Clustering Parameters:
+MIN_SAMPLES: 5                          # min number of points to retain a cluster
+CLUSTER_TOLERANCE: 0.25                 # how close do points need to be to cluster together
+#! Secondary Clustering Parameters:
+secondary_cloud_range: [-10.0, 10.0, -10.0, 10.0, -0.5, 5.0] # xmin, xmax, ymin, ymax, zmin, zmax
+secondary_ground_point_range: [-10.0, 10.0, -10, 10.0, 0.1, 5.0]
+secondary_max_object_size: [8.0, 8.0, 8.0]
+secondary_min_object_size: [0.0, 0.0, 0.0]
+secondary_randomDownSampleThreshold: 0.5
+secondary_doRandomDownsample: false
+secondary_min_object_z: -1.0
+secondary_max_object_z: 2.0
+MIN_SAMPLES_SECONDARY: 4               # a diff number of points used for secondary clustering
+CLUSTER_TOLERANCE_SECONDARY: 0.25
+unknown_type: 3
+# Filtering Clusters:
+min_height_ped: 0.8                     # Min inferred height of pedestrian (filtering)
+max_height_ped: 3.0                     # Max inferred height of pedestrian (filtering)
+# Visualization:
+viz_divide: 2 # Divide visualization W, H by this factor (saves computation power)

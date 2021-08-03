@@ -1,0 +1,11 @@
+point_cloud_range: [0, 40.0, -15.0, 15.0, -2.0, 1.0]   # xmin, xmax, ymin, ymax, zmin, zmax
+# Parking Occupancy Tuning Parameters
+N_OCCUPIED_THRES: 200                   # Number of points within parking spot for it to be considered "occupied"
+LEN_FILTER: 10                         # Length of temporal filter over which at least 1 frame needs to be "occupied"
+# RANSAC Tuning Parameters
+MAX_DISTANCE_RANSAC: 0.25              # Max distance from RANSAC plane fit
+MAX_ITERATIONS_RANSAC: 100
+GROUND_KALMAN_GAIN: 0.27                # x_hat = x_check + k * (y - x_check)
+# Map Stuff
+map_source: 'map'
+map_path: '/res/mcity.json'
