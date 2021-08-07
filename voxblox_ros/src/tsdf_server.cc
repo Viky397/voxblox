@@ -117,7 +117,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   icp_.reset(new ICP(getICPConfigFromRosParam(nh_private)));
 
-  // Advertise services.
+  // Advertise services.truncation
   generate_mesh_srv_ = nh_private_.advertiseService(
       "generate_mesh", &TsdfServer::generateMeshCallback, this);
   clear_map_srv_ = nh_private_.advertiseService(
@@ -218,6 +218,8 @@ void TsdfServer::getServerConfigFromRosParam(
 void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
     const Transformation& T_G_C, const bool is_freespace_pointcloud) {
+
+  std::cout << "processPointCloudMessageAndInsert" << std::endl;
   // Convert the PCL pointcloud into our awesome format.
 
   // Horrible hack fix to fix color parsing colors in PCL.
@@ -303,6 +305,23 @@ void TsdfServer::processPointCloudMessageAndInsert(
     icp_timer.Stop();
   }
 
+
+  // do clustering and association here
+  tf::Transform refined_tf;
+  tf::transformKindrToTF(T_G_C_refined.cast<double>(), &refined_tf);
+  Eigen::Matrix4d refined_tf_mtx = Eigen::Matrix4d::Identity();
+  Eigen::Matrix3d refined_tf_rot = Eigen::Matrix3d::Identity();
+  Eigen::Vector3d refined_tf_vec = Eigen::Vector3d::Zero();
+  tf::matrixTFToEigen(refined_tf.getBasis(), refined_tf_rot);
+  tf::vectorTFToEigen(refined_tf.getOrigin(), refined_tf_vec);
+  refined_tf_mtx.block<3,3>(0,0) = refined_tf_rot;
+  refined_tf_mtx.block<3,1>(0,3) = refined_tf_vec;
+
+  zeus_msgs::Detections3D raw_objects = clustering_node_->cluster(pointcloud_msg);
+  std::cout << "Number of clusters found: " << raw_objects.bbs.size() << std::endl;
+  zeus_msgs::Detections3D objects = tracking_node_->track(raw_objects, refined_tf_mtx);
+
+
   if (verbose_) {
     ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
   }
@@ -333,6 +352,7 @@ bool TsdfServer::getNextPointcloudFromQueue(
     sensor_msgs::PointCloud2::Ptr* pointcloud_msg, Transformation* T_G_C) {
   const size_t kMaxQueueSize = 10;
   if (queue->empty()) {
+	  std::cout << "PC queue empty" << std::endl;
     return false;
   }
   *pointcloud_msg = queue->front();
@@ -340,8 +360,10 @@ bool TsdfServer::getNextPointcloudFromQueue(
                                    world_frame_,
                                    (*pointcloud_msg)->header.stamp, T_G_C)) {
     queue->pop();
+    std::cout << "Returning new PC from queue" << std::endl;
     return true;
   } else {
+	  std::cout << "Queue TF lookup failed at time " << (*pointcloud_msg)->header.stamp << std::endl;
     if (queue->size() >= kMaxQueueSize) {
       ROS_ERROR_THROTTLE(60,
                          "Input pointcloud queue getting too long! Dropping "
@@ -370,6 +392,7 @@ void TsdfServer::insertPointcloud(
   while (
       getNextPointcloudFromQueue(&pointcloud_queue_, &pointcloud_msg, &T_G_C)) {
     constexpr bool is_freespace_pointcloud = false;
+    std::cout << "Got new pointcloud" << std::endl;
     processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
                                       is_freespace_pointcloud);
     processed_any = true;

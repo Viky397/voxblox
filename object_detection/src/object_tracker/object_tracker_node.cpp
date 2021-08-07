@@ -113,34 +113,36 @@ void KalmanTrackerNode::init() {
 	initialize_transforms();
 }
 
-void KalmanTrackerNode::callback(const zeus_msgs::Detections3D::ConstPtr &det,
-		const nav_msgs::OdometryConstPtr &odom) {
-	std::cout << "Raw det received " << det->bbs.size() << std::endl;
+zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &det,
+		const Eigen::Matrix4d &T_oc) {
+	std::cout << "Raw det received " << det.bbs.size() << std::endl;
 	auto start = std::chrono::high_resolution_clock::now();
-	std::vector<zeus_msgs::BoundingBox3D> dets = det->bbs;
+	std::vector<zeus_msgs::BoundingBox3D> dets = det.bbs;
 	//Eigen::Matrix4d Toi = Eigen::Matrix4d::Identity();
 	//zeus_tf::get_odom_tf(*odom, Toi);
 	//Eigen::Matrix4d Toc = Toi * Tic2;
-	kalmantracker->setCurrentTime(det->header.stamp.toSec());
+	kalmantracker->setCurrentTime(det.header.stamp.toSec());
 	//! Perform data association between the new detections (dets) and the existing object tracks
-	kalmantracker->association(dets, Eigen::Matrix4d::Identity());
+	kalmantracker->association(dets, T_oc);
 	//! Linear Kalman filter update
-	kalmantracker->filter(dets, Eigen::Matrix4d::Identity());
+	kalmantracker->filter(dets, T_oc);
 	//! Prune objects that are closer than metricGate to each other or objects outside point_cloud_range.
-	kalmantracker->prune(zeus_tf::get_inverse_tf(Eigen::Matrix4d::Identity()));
+	kalmantracker->prune(zeus_tf::get_inverse_tf(T_oc));
 	//! Publish ROS message:
 	zeus_msgs::Detections3D outputDetections;
-	outputDetections.header.stamp = det->header.stamp;
+	outputDetections.header.stamp = det.header.stamp;
 	outputDetections.header.frame_id = world_frame_id;
 	outputDetections.bbs.clear();
 	std::vector<Object> object_list = kalmantracker->get_object_list();
-	std::vector<double> rpy;
-	zeus_tf::get_rpy_from_odom(*odom, rpy);
-	convertToRosMessage(object_list, outputDetections, 0);
+	Eigen::Vector3d rpy = T_oc.block<3,3>(0,0).transpose().eulerAngles(0, 1, 2);
+	//zeus_tf::get_rpy_from_odom(*odom, rpy);
+	convertToRosMessage(object_list, outputDetections, (float)rpy[2]);
+	//convertToRosMessage(object_list, outputDetections, (float)0);
 	det_pub_.publish(outputDetections);
 	auto stop = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed = stop - start;
 	ROS_DEBUG_STREAM("[OBJ] KALMAN TRACKER TIME: " << elapsed.count());
+	return outputDetections;
 }
 
 void KalmanTrackerNode::initialize_transforms() {

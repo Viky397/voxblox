@@ -84,7 +84,9 @@ class SecondaryClusteringNode {
        which is published as a list in a ROS message.
        \param scan A 3D pointcloud output by a velodyne LIDAR.
     */
-    void callback(const sensor_msgs::PointCloud2ConstPtr& scan);
+    zeus_msgs::Detections3D cluster(const sensor_msgs::PointCloud2ConstPtr& scan);
+
+    void callback(const sensor_msgs::PointCloud2ConstPtr& scan) { auto ret = cluster(scan); }
 
  private:
     ros::NodeHandle nh_;

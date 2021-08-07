@@ -5,7 +5,7 @@
 #include <opencv2/core.hpp>
 #include "utils/zeus_pcl.hpp"
 
-void SecondaryClusteringNode::callback(const sensor_msgs::PointCloud2ConstPtr& scan) {
+zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const sensor_msgs::PointCloud2ConstPtr& scan) {
 	std::cout << "New scan" << std::endl;
 	std::cout << "   scan size before conversion " << scan->width << std::endl;
     zeus_pcl::PointCloudPtr pc(new zeus_pcl::PointCloud());
@@ -47,6 +47,8 @@ void SecondaryClusteringNode::callback(const sensor_msgs::PointCloud2ConstPtr& s
     sensor_msgs::PointCloud2 gp_prior_msg;
     zeus_pcl::toROSMsg(gp_prior, gp_prior_msg, "map");
     gp_prior_pub_.publish(gp_prior_msg);
+
+    return outputDetections;
 
 /***
     visualization_msgs::Marker lines;

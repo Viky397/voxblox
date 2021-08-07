@@ -66,6 +66,9 @@ class KalmanTrackerNode {
 
     void setKalmanTracker(KalmanPtr kalmantracker_) {kalmantracker = kalmantracker_;}
 
+    zeus_msgs::Detections3D track(const zeus_msgs::Detections3D &det,
+    		const Eigen::Matrix4d &T_oc);
+
     /*!
        \brief Incorporates new detections into the current list of object tracks.
        First, data association is computed between new detections and the existing object tracks.
@@ -76,7 +79,9 @@ class KalmanTrackerNode {
        \param odom The odometry (position and orientation) at the current time step.
        \pre The detection and odom topic should be synchronized.
     */
-    void callback(const zeus_msgs::Detections3D::ConstPtr & det, const nav_msgs::OdometryConstPtr& odom);
+    void callback(const zeus_msgs::Detections3D::ConstPtr & det, const nav_msgs::OdometryConstPtr& odom) {
+    	// auto ret = track(det, odom);
+    }
 
     /*!
        \brief Initializes the static transforms so that they only need to be queried once.
