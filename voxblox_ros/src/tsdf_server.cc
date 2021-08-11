@@ -53,6 +53,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                                              1, true);
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "tsdf_slice", 1, true);
+  my_pcl_pub_ = nh_private_.advertise<sensor_msgs::PointCloud2>("my_pcl", 1, true);
 
   nh_private_.param("pointcloud_queue_size", pointcloud_queue_size_,
                     pointcloud_queue_size_);
@@ -239,12 +240,19 @@ void TsdfServer::processPointCloudMessageAndInsert(
   timing::Timer ptcloud_timer("ptcloud_preprocess");
 
   // Convert differently depending on RGB or I type.
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointcloud_pcl(new pcl::PointCloud<pcl::PointXYZRGB>());
+  //sensor_msgs::PointCloud2::Ptr pointcloud_msg_dense(new sensor_msgs::PointCloud2);
   if (color_pointcloud) {
-    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:
-    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-    convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
-  } else if (has_intensity) {
+    pcl::fromROSMsg(*pointcloud_msg, *pointcloud_pcl);
+    convertPointcloud(*pointcloud_pcl, color_map_, &points_C, &colors);
+
+    //pcl::toROSMsg(pointcloud_pcl, *pointcloud_msg_dense);
+    //my_pcl_pub_.publish(pointcloud_msg_dense);
+  }
+
+  /**
+  else if (has_intensity) {
     pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
@@ -255,6 +263,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
     convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
   }
+  **/
   ptcloud_timer.Stop();
 
   Transformation T_G_C_refined = T_G_C;
@@ -317,9 +326,9 @@ void TsdfServer::processPointCloudMessageAndInsert(
   refined_tf_mtx.block<3,3>(0,0) = refined_tf_rot;
   refined_tf_mtx.block<3,1>(0,3) = refined_tf_vec;
 
-  zeus_msgs::Detections3D raw_objects = clustering_node_->cluster(pointcloud_msg);
+  zeus_msgs::Detections3D raw_objects = clustering_node_->cluster(pointcloud_pcl, refined_tf_mtx);
   std::cout << "Number of clusters found: " << raw_objects.bbs.size() << std::endl;
-  zeus_msgs::Detections3D objects = tracking_node_->track(raw_objects, refined_tf_mtx);
+  zeus_msgs::Detections3D objects = tracking_node_->track(raw_objects);
 
 
   if (verbose_) {
@@ -356,6 +365,7 @@ bool TsdfServer::getNextPointcloudFromQueue(
     return false;
   }
   *pointcloud_msg = queue->front();
+  std::cout << "Look up tf between " << (*pointcloud_msg)->header.frame_id << " and " << world_frame_ << std::endl;
   if (transformer_.lookupTransform((*pointcloud_msg)->header.frame_id,
                                    world_frame_,
                                    (*pointcloud_msg)->header.stamp, T_G_C)) {
@@ -363,7 +373,7 @@ bool TsdfServer::getNextPointcloudFromQueue(
     std::cout << "Returning new PC from queue" << std::endl;
     return true;
   } else {
-	  std::cout << "Queue TF lookup failed at time " << (*pointcloud_msg)->header.stamp << std::endl;
+	std::cout << "Queue TF lookup failed at time " << (*pointcloud_msg)->header.stamp << std::endl;
     if (queue->size() >= kMaxQueueSize) {
       ROS_ERROR_THROTTLE(60,
                          "Input pointcloud queue getting too long! Dropping "

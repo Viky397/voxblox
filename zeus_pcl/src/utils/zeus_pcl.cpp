@@ -18,6 +18,16 @@ static uint16_t getUint16FromByteArray(auto *byteArray, uint index) {
     return *( (uint16_t *)(byteArray + index));
 }
 
+void fromPCLRGB(const pcl::PointCloud<pcl::PointXYZRGB>& pclIn, PointCloudPtr cloudOut) {
+	cloudOut->resize(pclIn.size());
+	for (size_t i = 0; i < pclIn.size(); ++i) {
+		cloudOut->points[i].x = pclIn.points[i].x;
+		cloudOut->points[i].y = pclIn.points[i].y;
+		cloudOut->points[i].z = pclIn.points[i].z;
+		cloudOut->points[i].c = pclIn.points[i].r;
+	  }
+}
+
 void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr cloudOut) {
     cloudOut->resize(ros_msg->width);
     uint32_t point_step = ros_msg->point_step;
@@ -27,7 +37,8 @@ void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr c
     uint32_t c_offset = ros_msg->fields[3].offset;  // float (32)
     uint j = 0;
     auto *data = ros_msg->data.data();
-    for (uint i = 0; i < ros_msg->width * point_step; i += point_step) {
+    uint total_size = ros_msg->width * ros_msg->height;
+    for (uint i = 0; i < total_size * point_step; i += point_step) {
         cloudOut->points[j].x = getFloatFromByteArray(data, i + x_offset);
         cloudOut->points[j].y = getFloatFromByteArray(data, i + y_offset);
         cloudOut->points[j].z = getFloatFromByteArray(data, i + z_offset);
@@ -290,9 +301,9 @@ void project_points(PointCloudPtr cloud, PointCloudPtr uv, Eigen::Matrix4f P) {
     }
 }
 
-void transform_cloud(PointCloudPtr cloud, Eigen::Matrix4f T) {
+void transform_cloud(PointCloudPtr cloud, Eigen::Matrix4d T) {
     for (uint i = 0; i < cloud->size(); i++) {
-        Eigen::Vector4f x = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z, 1.0};
+        Eigen::Vector4d x = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z, 1.0};
         x = T * x;
         cloud->points[i].x = x(0, 0);
         cloud->points[i].y = x(1, 0);

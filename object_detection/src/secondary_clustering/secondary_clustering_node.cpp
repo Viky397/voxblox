@@ -4,36 +4,34 @@
 #include <chrono>
 #include <opencv2/core.hpp>
 #include "utils/zeus_pcl.hpp"
+#include <pcl/filters/voxel_grid.h>
 
-zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const sensor_msgs::PointCloud2ConstPtr& scan) {
-	std::cout << "New scan" << std::endl;
-	std::cout << "   scan size before conversion " << scan->width << std::endl;
+zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& scan, const Eigen::Matrix4d& T_oc) {
+	zeus_msgs::Detections3D outputDetections;
+	sensor_msgs::PointCloud2 gp_prior_msg;
+
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr scan_filtered (new pcl::PointCloud<pcl::PointXYZRGB>());
+
+	pcl::VoxelGrid<pcl::PointXYZRGB> filter;
+	filter.setLeafSize(0.05, 0.05, 0.05);
+	filter.setInputCloud(scan);
+	filter.filter(*scan_filtered);
+
     zeus_pcl::PointCloudPtr pc(new zeus_pcl::PointCloud());
     zeus_pcl::PointCloudPtr gp_prior(new zeus_pcl::PointCloud());
     zeus_pcl::PointCloudPtr gp(new zeus_pcl::PointCloud());
-    zeus_pcl::fromROSMsg(scan, pc);
-    std::cout << "   scan size after conversion " << pc->size() << std::endl;
-    //for (size_t i(0); i<100; i++) {
-    //	std::cout << "    sample point " << pc->points[i] << std::endl;
-    //}
-    zeus_pcl::passthrough(pc, point_cloud_range[0], point_cloud_range[1], point_cloud_range[2],
-        point_cloud_range[3], point_cloud_range[4], point_cloud_range[5]);
-    std::cout << "   pcr[0] " << point_cloud_range[0] << " pcr[1] " << point_cloud_range[1]  << " pcr[2] " << point_cloud_range[2]  << " pcr[3] " << point_cloud_range[3]<< std::endl;
-    std::cout << "   scan size after passthrough " << pc->size() << std::endl;
-    // radialDownSample(pc);
-    // zeus_pcl::copyCloud(pc, gp);
-    zeus_pcl::passthrough(pc, gp_prior, ground_point_range[0], ground_point_range[1], ground_point_range[2],
-        ground_point_range[3], ground_point_range[4], ground_point_range[5]);
-    // zeus_pcl::removeGroundPlane(gp_prior, pc, gp_params, K, max_distance_ransac,
-    //     max_iterations_ransac, true, gp);
-    std::cout << "   scan size of gp prior " << gp_prior->size() << std::endl;
-    zeus_pcl::copyCloud(gp_prior, gp);
-    // alpha, tolerance, Tm, Tm_small, Tb, Trmse, Tdprev
-    //auto ls = zeus_pcl::removeGroundPlane2(gp_prior, 3/180.0*M_PI, 0.25, 0.4, 0.2, 0.8, 2, 2, true, gp);
-    //std::cout << "   scan size of gp " << gp->size() << std::endl;
-    // Create ROS message
-    zeus_msgs::Detections3D outputDetections;
-    outputDetections.header.stamp = scan->header.stamp;
+    zeus_pcl::fromPCLRGB(*scan_filtered, pc);
+
+    Eigen::Matrix4d C_oc = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d r_oc = Eigen::Matrix4d::Identity();
+    C_oc.block<3,3>(0,0) = T_oc.block<3,3>(0,0);
+    zeus_pcl::transform_cloud(pc, C_oc);
+    zeus_pcl::passthrough(pc, gp_prior, -2.5, 2.5, -2.5, 2.5, 0.1, 3.5);
+
+    r_oc.block<3,1>(0,3) = T_oc.block<3,1>(0,3);
+    zeus_pcl::transform_cloud(gp_prior, r_oc);
+
+    pcl_conversions::fromPCL(scan->header, outputDetections.header);
     outputDetections.header.frame_id = "map";
     outputDetections.camera = 1;
     outputDetections.bbs.clear();
@@ -41,43 +39,11 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const sensor_msgs::Poin
     secondary_clustering(gp_prior, outputDetections);
     // Publish ROS Message
     det_pub_.publish(outputDetections);
-    sensor_msgs::PointCloud2 gp_msg;
-    //zeus_pcl::toROSMsg(gp, gp_msg, "map");
-    //gp_pub_.publish(gp_msg);
-    sensor_msgs::PointCloud2 gp_prior_msg;
+
     zeus_pcl::toROSMsg(gp_prior, gp_prior_msg, "map");
     gp_prior_pub_.publish(gp_prior_msg);
 
     return outputDetections;
-
-/***
-    visualization_msgs::Marker lines;
-    lines.header.stamp = ros::Time::now();
-    lines.header.frame_id = "velodyne_local";
-    lines.ns = "gp_removal";
-    lines.action = visualization_msgs::Marker::ADD;
-    lines.type = visualization_msgs::Marker::LINE_LIST;
-    lines.pose.orientation.w = 1;
-    lines.id = 0;
-    lines.scale.x = 0.05;
-    lines.color.a = 1;
-    lines.color.g = 1;
-    for (auto& l : ls) {
-        geometry_msgs::Point p;
-        p.x = l.first[0];
-        p.y = l.first[1];
-        p.z = l.first[2];
-
-        lines.points.push_back(p);
-
-        p.x = l.second[0];
-        p.y = l.second[1];
-        p.z = l.second[2];
-
-        lines.points.push_back(p);
-    }
-    gt_line_pub_.publish(lines);
-    ***/
 }
 
 void SecondaryClusteringNode::get_ros_parameters() {

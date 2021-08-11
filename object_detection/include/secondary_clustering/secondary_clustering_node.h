@@ -44,6 +44,10 @@
 #include "types/zeus_pcl_types.hpp"
 #include "utils/transform_utils.hpp"
 #include <visualization_msgs/Marker.h>
+#include <pcl/conversions.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
 
 //* SecondaryClusteringNode
 /**
@@ -84,9 +88,11 @@ class SecondaryClusteringNode {
        which is published as a list in a ROS message.
        \param scan A 3D pointcloud output by a velodyne LIDAR.
     */
-    zeus_msgs::Detections3D cluster(const sensor_msgs::PointCloud2ConstPtr& scan);
+    zeus_msgs::Detections3D cluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& scan, const Eigen::Matrix4d& T_oc);
 
-    void callback(const sensor_msgs::PointCloud2ConstPtr& scan) { auto ret = cluster(scan); }
+    void callback(const sensor_msgs::PointCloud2ConstPtr& scan) {
+    	//auto ret = cluster(scan);
+    }
 
  private:
     ros::NodeHandle nh_;

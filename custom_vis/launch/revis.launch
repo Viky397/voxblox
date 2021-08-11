@@ -2,11 +2,8 @@
 <!-- -*- mode: XML -*- -->
 
 <launch>
-  <arg name="online" default="true"/>
   <arg name="downsample" default="0.2"/>  <!-- value between 0.0 and 1.0 (uniform random)-->
 
-  <param unless="$(arg online)" name="/use_sim_time" value="true"/>
-  <param if="$(arg online)" name="/use_sim_time" value="false"/>
 
   <!-- launch revis node -->
   <node name="revis_node" type="revis_node" pkg="custom_vis" output="screen">
@@ -14,8 +11,5 @@
   </node>
   
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find custom_vis)/res/cuz_vis.rviz" />
-  <arg name="gui" default="False" />
-  <param name="use_gui" value="$(arg gui)"/>
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
 
 </launch>

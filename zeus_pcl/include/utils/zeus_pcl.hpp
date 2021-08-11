@@ -38,6 +38,11 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <pcl/conversions.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+
 #include "types/zeus_pcl_types.hpp"
 
 namespace zeus_pcl {
@@ -47,6 +52,8 @@ struct greater_than_bb {
     return ((bb1.w * bb1.h) > (bb2.w * bb2.h));
   }
 };
+
+void fromPCLRGB(const pcl::PointCloud<pcl::PointXYZRGB>& pclIn, PointCloudPtr cloudOut);
 
 /*!
    \brief Convert a PointCloud2 ROS message into our custom pointcloud format. (x, y, z)
@@ -226,7 +233,7 @@ void project_points(PointCloudPtr cloud, PointCloudPtr uv, Eigen::Matrix4f P);
    \param cloud The input pointcloud that will be transformed.
    \param T The 4x4 transformation matrix.
 */
-void transform_cloud(PointCloudPtr cloud, Eigen::Matrix4f T);
+void transform_cloud(PointCloudPtr cloud, Eigen::Matrix4d T);
 
 struct Node {
     explicit Node(int pindex) : index(pindex) { }

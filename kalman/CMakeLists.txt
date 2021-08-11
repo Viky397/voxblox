@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   geodesy
   zeus_pcl
   roslint
+  pcl_conversions
+  pcl_ros
 )
 
 set(ROSLINT_CPP_OPTS "--filter=-legal, -build/c++11, -whitespace/indent, -whitespace/braces, -runtime/references, -readability/casting")
