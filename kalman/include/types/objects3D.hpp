@@ -36,6 +36,7 @@
 #include <vector>
 #include <iostream>
 #include "utils/hmm.hpp"
+#include "utils/zeus_pcl.hpp"
 
 //* Object
 /**
@@ -58,6 +59,8 @@ class Object {
     double delta_t = 0.1;                                   /*!< current_time - last_observed_time */
     double first_observed_time;
     double last_updated;
+
+    zeus_pcl::PointCloudPtr cloud = zeus_pcl::PointCloudPtr(new zeus_pcl::PointCloud());
 
     /*!
        \brief Returns the most likely object state (type)
@@ -92,6 +95,8 @@ class Object {
        \return true/false is the state flashing?
     */
     bool checkFlashing(int type, float lower, float upper);
+
+    void mergeNewCloud(sensor_msgs::PointCloud2 cloud) {}
 
     friend std::ostream &operator<<(std::ostream &output, const Object &O) {
         output << "x: " << O.x_hat(0, 0) << " y: " << O.x_hat(1, 0) << " z: " << O.x_hat(2, 0) << " vx: " <<

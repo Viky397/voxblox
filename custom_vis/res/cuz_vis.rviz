@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /TF1/Frames1
         - /TF1/Tree1
+        - /PointCloud21
       Splitter Ratio: 0.628025472164154
     Tree Height: 2240
   - Class: rviz/Selection
@@ -28,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: GP_Prior
+    SyncSource: Raw Pointcloud
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -195,7 +196,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -207,6 +208,34 @@ Visualization Manager:
       Size (m): 0.004999999888241291
       Style: Points
       Topic: /semantic_pointcloud
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: RGB8
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.10000000149011612
+      Style: Squares
+      Topic: /kimera_semantics_node/my_pcl
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -239,7 +268,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 17.623416900634766
+      Distance: 16.872997283935547
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -247,17 +276,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.73354172706604
-        Y: -2.8908917903900146
+        X: 1.5564472675323486
+        Y: -2.6538925170898438
         Z: 0
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.3753981590270996
+      Pitch: 0.7453981041908264
       Target Frame: imu_link_local
-      Yaw: 2.9903998374938965
+      Yaw: 2.4753971099853516
     Saved: ~
 Window Geometry:
   Displays:

@@ -156,6 +156,9 @@ Eigen::Vector4d get_centroid(PointCloudPtr pc, std::vector<int> &indices);
 
 void to_2d(PointCloudPtr cloudIn, PointCloudPtr cloudOut);
 
+
+std::vector<double> getBBox(const PointCloudPtr cluster_pts);
+
 /*!
    \brief Remove the points from pc that correspond to the ground.
 

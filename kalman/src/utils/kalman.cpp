@@ -175,6 +175,7 @@ void KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::M
                 R_adj = R;
             }
 
+            /**
             A(0, 3) = X[i].delta_t;
             A(1, 4) = X[i].delta_t;
             x_check = A * X[i].x_hat;
@@ -195,18 +196,29 @@ void KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::M
             X[i].yaw = dets[j].yaw;
             //std::cout << "X[i].yaw after " << X[i].yaw << std::endl;
             X[i].confidence = X[i].confidence + one_d_kalman_gains[4] * (dets[j].confidence - X[i].confidence);
+            **/
+
+            A(0, 3) = X[i].delta_t;
+            A(1, 4) = X[i].delta_t;
+            x_check = A * X[i].x_hat;
+            P_check = A * X[i].P_hat * A.transpose() + Q_adj;
+            Eigen::Vector4d ybar = {dets[j].x, dets[j].y, dets[j].z, 1.0};
+            ybar = Toc * ybar;
+            Eigen::Vector3d y = {ybar(0, 0), ybar(1, 0), ybar(2, 0)};
+            Eigen::MatrixXd temp = C * P_check * C.transpose() + R_adj;
+            Eigen::MatrixXd K = (P_check * C.transpose()) * temp.inverse();
+
+
+            X[i].x_hat = Eigen::Vector3d{dets[j].x, dets[j].y, dets[j].z};
+            X[i].P_hat = Eigen::MatrixXd::Identity(xdim, xdim);
+            X[i].w = dets[j].w;
+            X[i].l = dets[j].l;
+            X[i].h = dets[j].h;
+            X[i].yaw = dets[j].yaw;
+            X[i].confidence = dets[j].confidence;
 
         } else {
-            float t = current_time - X[i].last_updated;
-            if (t < 0.001)
-                t = 0;
-            A(0, 3) = t;
-            A(1, 4) = t;
-            x_check = A * X[i].x_hat;
-            P_check = A * X[i].P_hat * A.transpose() + Q;
-            X[i].P_hat = P_check;
-            X[i].x_hat = x_check;
-            X[i].confidence = X[i].confidence * exp(-1 * confidence_drop * t);
+
         }
         X[i].last_updated = current_time;
     }
@@ -356,6 +368,8 @@ Object KalmanTracker::create_new(zeus_msgs::BoundingBox3D &det, int &objectID, d
     x.yaw = det.yaw;
     x.hmm = HMMPtr(new HiddenMarkovModel(A_hmm, C_hmm, pi_hmm, types));
     x.filter_length = filter_length;
+    auto cloud = boost::make_shared<sensor_msgs::PointCloud2>(det.cloud);
+    zeus_pcl::fromROSMsg(cloud, x.cloud);
     if (det.class_confidences.size() > 0) {
         x.push_type(det.type, det.class_confidences);
     } else {

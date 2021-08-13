@@ -38,9 +38,11 @@ namespace zeus_pcl {
 
 class PointXYZ {
  public:
-    float x, y, z, c;
-    PointXYZ() {x = 0; y = 0; z = 0; c = 0;}
-    PointXYZ(float x0, float y0, float z0, float c0 = 0) {x = x0; y = y0; z = z0; c = c0;}
+    float x, y, z, r, g, b, c;
+    PointXYZ() {x = 0; y = 0; z = 0; r = 0; g = 0; b = 0; c = 0;}
+    PointXYZ(float x0, float y0, float z0, float r0, float g0, float b0, float c0 = 0) {
+    	x = x0; y = y0; z = z0; r = r0; g = g0; b = b0; c = c0;
+    }
     // array-type accesor
     float operator [] (int i) const {
         if (i == 0)
@@ -49,6 +51,12 @@ class PointXYZ {
             return y;
         else if (i == 2)
             return z;
+        else if (i == 3)
+            return r;
+        else if (i == 4)
+            return g;
+        else if (i == 5)
+            return b;
         else
             return c;
     }
@@ -66,22 +74,22 @@ class PointXYZ {
         z /= norm;
     }
     PointXYZ cross(const PointXYZ P) const {
-        return PointXYZ(y*P.z - z*P.y, z*P.x - x*P.z, x*P.y - y*P.x, c);
+        return PointXYZ(y*P.z - z*P.y, z*P.x - x*P.z, x*P.y - y*P.x, r, g, b, c);
     }
     PointXYZ operator - (const PointXYZ &p) {
-        return PointXYZ(this->x - p.x, this->y - p.y, this->z - p.z, c);
+        return PointXYZ(this->x - p.x, this->y - p.y, this->z - p.z, r, g, b, c);
     }
     PointXYZ operator + (const PointXYZ &p) {
-        return PointXYZ(this->x + p.x, this->y + p.y, this->z + p.z, c);
+        return PointXYZ(this->x + p.x, this->y + p.y, this->z + p.z, r, g, b, c);
     }
     PointXYZ operator * (const float &a) {
-        return PointXYZ(this->x * a, this->y * a, this->z * a, c);
+        return PointXYZ(this->x * a, this->y * a, this->z * a, r, g, b, c);
     }
     bool operator == (const PointXYZ &p) {
         return this->x == p.x && this->y == p.y && this->z == p.z;
     }
     friend std::ostream &operator << (std::ostream &os, const PointXYZ &p) {
-        os << p.x << " " << p.y << " " << p.z << " " << p.c;
+        os << p.x << " " << p.y << " " << p.z << " " << p.r << " " << p.g << " " << p.b << " " << p.c;
         return os;
     }
 };

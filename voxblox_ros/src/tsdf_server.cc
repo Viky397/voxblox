@@ -3,6 +3,9 @@
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 
+#include <pcl/filters/uniform_sampling.h>
+#include <pcl/filters/passthrough.h>
+
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
 
@@ -53,7 +56,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                                              1, true);
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "tsdf_slice", 1, true);
-  my_pcl_pub_ = nh_private_.advertise<sensor_msgs::PointCloud2>("my_pcl", 1, true);
+  my_pcl_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("my_pcl", 1, true);
 
   nh_private_.param("pointcloud_queue_size", pointcloud_queue_size_,
                     pointcloud_queue_size_);
@@ -241,29 +244,35 @@ void TsdfServer::processPointCloudMessageAndInsert(
 
   // Convert differently depending on RGB or I type.
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointcloud_pcl(new pcl::PointCloud<pcl::PointXYZRGB>());
-  //sensor_msgs::PointCloud2::Ptr pointcloud_msg_dense(new sensor_msgs::PointCloud2);
   if (color_pointcloud) {
-    // pointcloud_pcl is modified below:
-    pcl::fromROSMsg(*pointcloud_msg, *pointcloud_pcl);
+    pcl::PCLPointCloud2::Ptr pcl_pc2(new pcl::PCLPointCloud2());
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointcloud_pcl_1(new pcl::PointCloud<pcl::PointXYZRGB>());
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointcloud_pcl_2(new pcl::PointCloud<pcl::PointXYZRGB>());
+
+    pcl_conversions::toPCL(*pointcloud_msg, *pcl_pc2);
+    pcl::fromPCLPointCloud2(*pcl_pc2, *pointcloud_pcl_1);
+
+
+    pcl::UniformSampling<pcl::PointXYZRGB> filter;
+	filter.setInputCloud(pointcloud_pcl_1);
+	filter.setRadiusSearch(0.05f);
+	filter.filter(*pointcloud_pcl_2);
+
+	pcl::PassThrough<pcl::PointXYZRGB> filter2;
+	filter2.setInputCloud(pointcloud_pcl_2);
+	filter2.setFilterFieldName("x");
+	filter2.setFilterLimits(-3, 3);
+	filter2.setFilterFieldName("y");
+	filter2.setFilterLimits(-3, 3);
+	filter2.setFilterFieldName("z");
+	filter2.setFilterLimits(-3, 3);
+	filter2.filter(*pointcloud_pcl);
+
+    my_pcl_pub_.publish(*pointcloud_pcl);
+
     convertPointcloud(*pointcloud_pcl, color_map_, &points_C, &colors);
-
-    //pcl::toROSMsg(pointcloud_pcl, *pointcloud_msg_dense);
-    //my_pcl_pub_.publish(pointcloud_msg_dense);
   }
 
-  /**
-  else if (has_intensity) {
-    pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
-    // pointcloud_pcl is modified below:
-    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-    convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
-  } else {
-    pcl::PointCloud<pcl::PointXYZ> pointcloud_pcl;
-    // pointcloud_pcl is modified below:
-    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-    convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
-  }
-  **/
   ptcloud_timer.Stop();
 
   Transformation T_G_C_refined = T_G_C;

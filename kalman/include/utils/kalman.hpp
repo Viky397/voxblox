@@ -87,7 +87,7 @@ class KalmanTracker {
    void setMetricGate(double metricGate_) {metricGate = metricGate_;}
    void setIOUThes(double iou_thres_) {iou_thres = iou_thres_;}
    void setMetricThres(double metric_thres_) {metric_thres = metric_thres_;}
-   void setDeleteTime(double delete_time_) {delete_time = delete_time_;}
+   void setDeleteTime(double delete_time_) {delete_time = delete_time_; delete_time_unknown = delete_time; }
    void setCostParameters(double alpha, double beta) {cost_alpha = alpha; cost_beta = beta;}
    void setFilterLength(int filter_length_) {filter_length = filter_length_;}
    void setPedestrianType(int pedestrian_type_) {pedestrian_type = pedestrian_type_;}

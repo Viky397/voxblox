@@ -6,6 +6,7 @@
 #include <chrono>
 #include <string>
 #include <utility>
+#include <opencv2/core.hpp>
 #include "utils/zeus_pcl.hpp"
 
 namespace zeus_pcl {
@@ -24,17 +25,24 @@ void fromPCLRGB(const pcl::PointCloud<pcl::PointXYZRGB>& pclIn, PointCloudPtr cl
 		cloudOut->points[i].x = pclIn.points[i].x;
 		cloudOut->points[i].y = pclIn.points[i].y;
 		cloudOut->points[i].z = pclIn.points[i].z;
-		cloudOut->points[i].c = pclIn.points[i].r;
+		cloudOut->points[i].r = pclIn.points[i].r;
+		cloudOut->points[i].g = pclIn.points[i].g;
+		cloudOut->points[i].b = pclIn.points[i].b;
+		cloudOut->points[i].c = 1.0;
+		//std::cout << "color pcl: r: " << cloudOut->points[i].r << " g: " << cloudOut->points[i].g << " b: "<< cloudOut->points[i].b << std::endl;
 	  }
 }
 
 void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr cloudOut) {
     cloudOut->resize(ros_msg->width);
+    std::cout << "size: " << ros_msg->width << std::endl;
     uint32_t point_step = ros_msg->point_step;
     uint32_t x_offset = ros_msg->fields[0].offset;  // float (32)
     uint32_t y_offset = ros_msg->fields[1].offset;  // float (32)
     uint32_t z_offset = ros_msg->fields[2].offset;  // float (32)
-    uint32_t c_offset = ros_msg->fields[3].offset;  // float (32)
+    uint32_t r_offset = ros_msg->fields[3].offset;
+    uint32_t g_offset = ros_msg->fields[3].offset+1;
+    uint32_t b_offset = ros_msg->fields[3].offset+2;
     uint j = 0;
     auto *data = ros_msg->data.data();
     uint total_size = ros_msg->width * ros_msg->height;
@@ -42,7 +50,11 @@ void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr c
         cloudOut->points[j].x = getFloatFromByteArray(data, i + x_offset);
         cloudOut->points[j].y = getFloatFromByteArray(data, i + y_offset);
         cloudOut->points[j].z = getFloatFromByteArray(data, i + z_offset);
-        cloudOut->points[j].c = getFloatFromByteArray(data, i + c_offset);
+        cloudOut->points[j].r = ros_msg->data[i + r_offset];
+        cloudOut->points[j].g = ros_msg->data[i + g_offset];
+        cloudOut->points[j].b = ros_msg->data[i + b_offset];
+        cloudOut->points[j].c = 1.0;
+        std::cout << "color: r: " << cloudOut->points[j].r << " g: " << cloudOut->points[j].g << " b: "<< cloudOut->points[j].b << std::endl;
         j++;
     }
 }
@@ -77,7 +89,9 @@ void toROSMsg(PointCloudPtr pc, sensor_msgs::PointCloud2& msg, std::string frame
     uint32_t x_offset = 0;
     uint32_t y_offset = 4;
     uint32_t z_offset = 8;
-    uint32_t c_offset = 16;
+    uint32_t r_offset = 16;
+    uint32_t g_offset = 17;
+    uint32_t b_offset = 18;
     msg.point_step = point_step;
     msg.width = pc->size();
     msg.height = 1;
@@ -90,27 +104,35 @@ void toROSMsg(PointCloudPtr pc, sensor_msgs::PointCloud2& msg, std::string frame
         getByteArrayFromFloat(&msg.data[i + x_offset], pc->points[j].x);
         getByteArrayFromFloat(&msg.data[i + y_offset], pc->points[j].y);
         getByteArrayFromFloat(&msg.data[i + z_offset], pc->points[j].z);
-        getByteArrayFromFloat(&msg.data[i + c_offset], pc->points[j].c);
+        msg.data[i + r_offset] = pc->points[j].r;
+        msg.data[i + g_offset] = pc->points[j].g;
+        msg.data[i + b_offset] = pc->points[j].b;
         j++;
     }
 
     sensor_msgs::PointField field;
     field.name = "x";
-    field.offset = 0;
+    field.offset = x_offset;
     field.datatype = 7;
     field.count = 1;
     msg.fields.push_back(field);
 
     field.name = "y";
-    field.offset = 4;
+    field.offset = y_offset;
+    field.datatype = 7;
+    field.count = 1;
     msg.fields.push_back(field);
 
     field.name = "z";
-    field.offset = 8;
+    field.offset = z_offset;
+    field.datatype = 7;
+    field.count = 1;
     msg.fields.push_back(field);
 
     field.name = "rgb";
-    field.offset = 16;
+    field.offset = r_offset;
+    field.datatype = 7;
+    field.count = 1;
     msg.fields.push_back(field);
 
     msg.header.frame_id = frame;
@@ -252,6 +274,71 @@ void to_2d(PointCloudPtr cloudIn, PointCloudPtr cloudOut) {
         cloudOut->points[i] = cloudIn->points[i];
         cloudOut->points[i].z = 0;
     }
+}
+
+std::vector<double> getBBox(const PointCloudPtr cluster_pts) {
+	std::vector<double> bbox(7); //x, y, z, l, w, h, yaw
+
+	PointCloudPtr cluster_pts_2d (new PointCloud());
+	to_2d(cluster_pts, cluster_pts_2d);
+
+	cv::Mat data_pts = cv::Mat(cluster_pts_2d->size(), 2, CV_64F);
+	for (int j = 0; j < data_pts.rows; j++) {
+		data_pts.at<double>(j, 0) = cluster_pts_2d->points[j].x;
+		data_pts.at<double>(j, 1) = cluster_pts_2d->points[j].y;
+	}
+	cv::PCA pca_analysis(data_pts, cv::Mat(), cv::PCA::DATA_AS_ROW, 2);
+
+	std::vector<Eigen::Vector2d> eigen_vecs(2);
+	std::vector<double> eigen_vals(2);
+	for (int k = 0; k < 2; k++) {
+		eigen_vecs[k][0] = pca_analysis.eigenvectors.at<double>(k, 0);
+		eigen_vecs[k][1] = pca_analysis.eigenvectors.at<double>(k, 1);
+		eigen_vals[k] = pca_analysis.eigenvalues.at<double>(k);
+	}
+
+	Eigen::Vector4d centroid; // = zeus_pcl::get_centroid(cluster_pts, cuboid);
+	centroid(0, 0) = static_cast<float>(pca_analysis.mean.at<double>(0, 0));
+	centroid(1, 0) = static_cast<float>(pca_analysis.mean.at<double>(0, 1));
+	centroid(3, 0) = 1.0;
+
+	size_t major_axis = eigen_vals[0] > eigen_vals[1] ? 0 : 1;
+	size_t minor_axis = 1 - major_axis;
+	double yaw = atan2(eigen_vecs[major_axis][0], eigen_vecs[major_axis][1]);
+
+	double max_x = 0, max_y = 0, max_z = 0;
+	for (size_t p = 0; p < cluster_pts->size(); p++) {
+		Eigen::Vector2d centered_pt(cluster_pts->points[p].x - centroid(0, 0),
+				cluster_pts->points[p].y - centroid(1, 0));
+
+		double proj_major_axis = abs(
+				centered_pt[0] * eigen_vecs[major_axis][0]
+						+ centered_pt[1] * eigen_vecs[major_axis][1]);
+		double proj_minor_axis = abs(
+				centered_pt[0] * eigen_vecs[minor_axis][0]
+						+ centered_pt[1] * eigen_vecs[minor_axis][1]);
+		Eigen::Vector2d pt_pca(proj_major_axis, proj_minor_axis);
+
+		if (proj_major_axis > max_x) {
+			max_x = proj_major_axis;
+		}
+		if (proj_minor_axis > max_y) {
+			max_y = proj_minor_axis;
+		}
+		if (abs(cluster_pts->points[p].z / 2) > max_z)
+			max_z = abs(cluster_pts->points[p].z / 2);
+	}
+	centroid(2, 0) = max_z;
+
+	bbox.at(0) = centroid(0, 0);
+	bbox.at(1) = centroid(1, 0);
+	bbox.at(2) = centroid(2, 0);
+	bbox.at(3) = max_x * 2 * 1.1;;
+	bbox.at(4) = max_y * 2 * 1.1;;
+	bbox.at(5) = max_z * 2 * 1.1;;
+	bbox.at(6) = yaw;
+
+	return bbox;
 }
 
 void removeGroundPlane(PointCloudPtr groundPrior, PointCloudPtr pc, Eigen::Vector4f &gp_params,

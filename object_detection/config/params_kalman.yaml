@@ -8,9 +8,9 @@ Q_dynamic: [0.015,0.015,1.0,0.05,0.05]
 R_dynamic: [0.0015,0.0015,0.05]
 # new_value = old_value + Kalman_gain * (detection - old_value)
 one_d_kalman_gains: [0.50, 0.40, 0.42, 0.75, 0.3]   # Kw, Kl, Kh, Kyaw, Kconfidence
-confidence_drop: 1.2    # How much should confidence drop over time c(t) = c(0) * exp(-1 * confidence_drop * t)
+confidence_drop: 0.0    # How much should confidence drop over time c(t) = c(0) * exp(-1 * confidence_drop * t)
 metricGate: 0.575
-delete_time: 1.0        # How many seconds to wait before deleting an object with no associated detections
+delete_time: 9999.0        # How many seconds to wait before deleting an object with no associated detections
 metric_thres: 0.5       # metric distance
 pedestrian_type: 1      # This type corresponds to a "pedestrian" object
 unknown_type: 3         # This type corresponds to an "unknown" object

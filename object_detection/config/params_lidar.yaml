@@ -16,7 +16,7 @@ P4: [1449.144043, 0.000000, 1199.158041, 0.000000,
     0.0, 0.0, 1.000000, 0.000000,
     0.0, 0.0, 0.0, 1.0]
 # BEV Shape Parameters
-point_cloud_range: [-2.0, 40.0, -15.0, 15.0, -2.0, 1.0]   # xmin, xmax, ymin, ymax, zmin, zmax
+point_cloud_range: [-50.0, 50.0, -50.0, 50.0, -50.0, 50.0]   # xmin, xmax, ymin, ymax, zmin, zmax
 # Object size limits
 max_object_size: [3.0, 3.0, 3.0]        # max_l, max_w, max_h
 min_object_size: [0.0, 0.0, 0.4]        # smallest alowed object size

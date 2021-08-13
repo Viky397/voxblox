@@ -13,3 +13,4 @@ float32 objectness
 float32[] class_confidences
 int32 ID
 int32 camera
+sensor_msgs/PointCloud2 cloud
