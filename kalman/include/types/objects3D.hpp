@@ -35,6 +35,12 @@
 #include <deque>
 #include <vector>
 #include <iostream>
+
+#include <pcl/conversions.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+
 #include "utils/hmm.hpp"
 #include "utils/zeus_pcl.hpp"
 
@@ -47,6 +53,7 @@ class Object {
     ~Object() {}
     Eigen::MatrixXd x_hat = Eigen::MatrixXd::Zero(5, 1);    /*!< [x, y, z, xdot, ydot] 3D position and 2D velocity */
     Eigen::MatrixXd P_hat = Eigen::MatrixXd::Zero(5, 5);    /*!< Covariance of the state */
+    Eigen::MatrixXd y_prev = Eigen::MatrixXd::Zero(3, 1);
     float w = 0, l = 0, h = 0, yaw = 0;                     /*!< Shape of the (3D) bounding box, yaw = orient about z */
     int type = 0;                                           /*!< Which state is the object most likely in */
     float confidence = 1.0;                                 /*!< Confidence level for the object: \f$\in [0, 1] \f$ */
@@ -60,7 +67,7 @@ class Object {
     double first_observed_time;
     double last_updated;
 
-    zeus_pcl::PointCloudPtr cloud = zeus_pcl::PointCloudPtr(new zeus_pcl::PointCloud());
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
 
     /*!
        \brief Returns the most likely object state (type)
@@ -96,7 +103,7 @@ class Object {
     */
     bool checkFlashing(int type, float lower, float upper);
 
-    void mergeNewCloud(sensor_msgs::PointCloud2 cloud) {}
+    std::vector<double> mergeNewCloud(sensor_msgs::PointCloud2 cloud);
 
     friend std::ostream &operator<<(std::ostream &output, const Object &O) {
         output << "x: " << O.x_hat(0, 0) << " y: " << O.x_hat(1, 0) << " z: " << O.x_hat(2, 0) << " vx: " <<

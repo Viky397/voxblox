@@ -3,6 +3,12 @@
 #include <map>
 #include <algorithm>
 #include <vector>
+
+#include <pcl/conversions.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+
 #include "utils/kalman.hpp"
 #include "utils/transform_utils.hpp"
 #include "utils/association.hpp"
@@ -208,13 +214,19 @@ void KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::M
             Eigen::MatrixXd temp = C * P_check * C.transpose() + R_adj;
             Eigen::MatrixXd K = (P_check * C.transpose()) * temp.inverse();
 
+            auto bbox = X[i].mergeNewCloud(dets[j].cloud);
 
-            X[i].x_hat = Eigen::Vector3d{dets[j].x, dets[j].y, dets[j].z};
+            X[i].x_hat(0,0) = bbox[0];
+            X[i].x_hat(1,0) = bbox[1];
+			X[i].x_hat(2,0) = bbox[2];
+			X[i].y_prev(0,0) = dets[j].x;
+			X[i].y_prev(1,0) = dets[j].y;
+			X[i].y_prev(2,0) = dets[j].z;
             X[i].P_hat = Eigen::MatrixXd::Identity(xdim, xdim);
-            X[i].w = dets[j].w;
-            X[i].l = dets[j].l;
-            X[i].h = dets[j].h;
-            X[i].yaw = dets[j].yaw;
+            X[i].l = bbox[3];
+            X[i].w = bbox[4];
+            X[i].h = bbox[5];
+            X[i].yaw = bbox[6];
             X[i].confidence = dets[j].confidence;
 
         } else {
@@ -368,8 +380,8 @@ Object KalmanTracker::create_new(zeus_msgs::BoundingBox3D &det, int &objectID, d
     x.yaw = det.yaw;
     x.hmm = HMMPtr(new HiddenMarkovModel(A_hmm, C_hmm, pi_hmm, types));
     x.filter_length = filter_length;
-    auto cloud = boost::make_shared<sensor_msgs::PointCloud2>(det.cloud);
-    zeus_pcl::fromROSMsg(cloud, x.cloud);
+    // auto cloud = boost::make_shared<sensor_msgs::PointCloud2>(det.cloud);
+    pcl::fromROSMsg(det.cloud, *x.cloud);
     if (det.class_confidences.size() > 0) {
         x.push_type(det.type, det.class_confidences);
     } else {

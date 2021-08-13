@@ -1,4 +1,6 @@
 // Author: Keenan Burnett
+#include <pcl/filters/uniform_sampling.h>
+
 #include "types/objects3D.hpp"
 #include <iostream>
 #include <vector>
@@ -42,4 +44,24 @@ double Object::getAge(double t) {
         return t - first_observed_time;
     else
         return 0.0;
+}
+
+std::vector<double> Object::mergeNewCloud(sensor_msgs::PointCloud2 cloud_msg) {
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_new_pcl(new pcl::PointCloud<pcl::PointXYZRGB>());
+	pcl::fromROSMsg(cloud_msg, *cloud_new_pcl);
+
+	auto cloud_merged = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB> >(*cloud + *cloud_new_pcl);
+	cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+
+    pcl::UniformSampling<pcl::PointXYZRGB> filter;
+	filter.setInputCloud(cloud_merged);
+	filter.setRadiusSearch(0.05f);
+	filter.filter(*cloud);
+
+	zeus_pcl::PointCloudPtr cloud_merged_zpcl(new zeus_pcl::PointCloud());
+	zeus_pcl::fromPCLRGB(*cloud, cloud_merged_zpcl);
+
+	auto bbox = zeus_pcl::getBBox(cloud_merged_zpcl);
+
+	return bbox;
 }
