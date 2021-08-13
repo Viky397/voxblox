@@ -564,9 +564,9 @@ void KalmanTracker::optimalAssociation(std::vector<zeus_msgs::BoundingBox3D> &de
     std::vector<double> centroid;
     get_centroid(X, dets, centroid);
     for (uint i = 0; i < N; i++) {
-        pc->points[i].x = float(X[i].x_hat(0, 0) - centroid[0]);
-        pc->points[i].y = float(X[i].x_hat(1, 0) - centroid[1]);
-        pc->points[i].z = float(X[i].x_hat(2, 0) - centroid[2]);
+        pc->points[i].x = float(X[i].y_prev(0, 0) - centroid[0]);
+        pc->points[i].y = float(X[i].y_prev(1, 0) - centroid[1]);
+        pc->points[i].z = float(X[i].y_prev(2, 0) - centroid[2]);
     }
     for (uint i = N; i < N + M; i++) {
         pc->points[i].x = float(dets[i - N].x - centroid[0]);
