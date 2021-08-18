@@ -227,7 +227,7 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
-						 std::vector<GlobalIndex>& changed_ids,
+						 std::vector<GlobalIndex>& changed_ids_thread,
                          const bool freespace_points,
                          ThreadSafeIndex* index_getter);
 };
@@ -296,7 +296,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
-						 std::vector<GlobalIndex>& changed_ids,
+						 std::vector<GlobalIndex>& changed_ids_thread,
                          const bool freespace_points,
                          ThreadSafeIndex* index_getter);
 

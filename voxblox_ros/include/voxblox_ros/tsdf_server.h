@@ -61,6 +61,7 @@ class TsdfServer {
 
   void integratePointcloud(const Transformation& T_G_C,
                            const Pointcloud& ptcloud_C, const Colors& colors,
+						   std::vector<GlobalIndex>& changed_ids,
                            const bool is_freespace_pointcloud = false);
   virtual void newPoseCallback(const Transformation& /*new_pose*/) {
     // Do nothing.

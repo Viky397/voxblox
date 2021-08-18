@@ -233,7 +233,8 @@ void SimulationServer::generateSDF() {
     transformPointcloud(T_G_C.inverse(), ptcloud, &ptcloud_C);
 
     // Put into the real map.
-    tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors);
+    std::vector<GlobalIndex> vec;
+    tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors, vec);
 
     if (generate_occupancy_) {
       occ_integrator_->integratePointCloud(T_G_C, ptcloud_C);
