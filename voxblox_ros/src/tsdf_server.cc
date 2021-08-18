@@ -109,6 +109,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   } else if (method.compare("fast") == 0) {
     tsdf_integrator_.reset(new FastTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
+        // std::cout << "TSDF FAST:" << std::endl;
+
   } else {
     tsdf_integrator_.reset(new SimpleTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
@@ -223,7 +225,6 @@ void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
     const Transformation& T_G_C, const bool is_freespace_pointcloud) {
 
-  std::cout << "processPointCloudMessageAndInsert" << std::endl;
   // Convert the PCL pointcloud into our awesome format.
 
   // Horrible hack fix to fix color parsing colors in PCL.
@@ -237,6 +238,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
       has_intensity = true;
     }
   }
+  std::cout << "processPointCloudMessageAndInsert" << std::endl;
 
   Pointcloud points_C;
   Colors colors;

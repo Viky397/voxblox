@@ -161,7 +161,7 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
 
   float updated_weight = weight;
   // Compute updated weight in case we use weight dropoff. It's easier here
-  // that in getVoxelWeight as here we have the actual SDF for the voxel
+  // than in getVoxelWeight as here we have the actual SDF for the voxel
   // already computed.
   const FloatingPoint dropoff_epsilon = voxel_size_;
   if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
@@ -224,6 +224,8 @@ float TsdfIntegratorBase::computeDistance(const Point& origin,
   const FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
 
   const float sdf = static_cast<float>(dist_G - dist_G_V);
+  std::cout << "TSDFintegrate:" << std::endl;
+
   return sdf;
 }
 
@@ -242,7 +244,9 @@ float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
 void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
-                                               const bool freespace_points) {
+											   std::vector<GlobalIndex>& changed_ids,
+                                               const bool freespace_points
+											   ) {
   timing::Timer integrate_timer("integrate/simple");
   CHECK_EQ(points_C.size(), colors.size());
 
@@ -252,7 +256,7 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   std::list<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
     integration_threads.emplace_back(&SimpleTsdfIntegrator::integrateFunction,
-                                     this, T_G_C, points_C, colors,
+                                     this, T_G_C, points_C, colors, changed_ids,
                                      freespace_points, index_getter.get());
   }
 
@@ -269,8 +273,9 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
 void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                                              const Pointcloud& points_C,
                                              const Colors& colors,
-                                             const bool freespace_points,
-                                             ThreadSafeIndex* index_getter) {
+                                             std::vector<GlobalIndex>& changed_ids,
+											 const bool freespace_points,
+											 ThreadSafeIndex* index_getter) {
   DCHECK(index_getter != nullptr);
 
   size_t point_idx;
@@ -307,6 +312,7 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
+											   std::vector<GlobalIndex>& changed_ids,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate/merged");
   CHECK_EQ(points_C.size(), colors.size());
@@ -488,6 +494,7 @@ void MergedTsdfIntegrator::integrateRays(
 void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                                            const Pointcloud& points_C,
                                            const Colors& colors,
+										   std::vector<GlobalIndex>& changed_ids,
                                            const bool freespace_points,
                                            ThreadSafeIndex* index_getter) {
   DCHECK(index_getter != nullptr);
@@ -505,18 +512,22 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     }
 
     const Point origin = T_G_C.getPosition();
-    const Point point_G = T_G_C * point_C;
+    const Point point_G = T_G_C * point_C; // Global frame
     // Checks to see if another ray in this scan has already started 'close'
     // to this location. If it has then we skip ray casting this point. We
-    // measure if a start location is 'close' to another points by inserting
+    // measure if a start location is 'close' to another point by inserting
     // the point into a set of voxels. This voxel set has a resolution
     // start_voxel_subsampling_factor times higher then the voxel size.
+
     GlobalIndex global_voxel_idx;
-    global_voxel_idx = getGridIndexFromPoint<GlobalIndex>(
+    global_voxel_idx = getGridIndexFromPoint<GlobalIndex>( // Given a PC, can return set of indices
         point_G, config_.start_voxel_subsampling_factor * voxel_size_inv_);
     if (!start_voxel_approx_set_.replaceHash(global_voxel_idx)) {
       continue;
     }
+    
+    // std::cout << "PC1:" << std::endl;
+    // std::cout << global_voxel_idx << std::endl;
 
     constexpr bool cast_from_origin = false;
     RayCaster ray_caster(origin, point_G, is_clearing,
@@ -555,6 +566,7 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const Pointcloud& points_C,
                                              const Colors& colors,
+											 std::vector<GlobalIndex>& changed_ids,
                                              const bool freespace_points) {
   timing::Timer integrate_timer("integrate/fast");
   CHECK_EQ(points_C.size(), colors.size());

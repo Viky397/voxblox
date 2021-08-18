@@ -157,7 +157,8 @@ inline IndexType getGridIndexFromPoint(const Point& point,
                    std::floor(point.y() * grid_size_inv + kEpsilon),
                    std::floor(point.z() * grid_size_inv + kEpsilon));
 }
-
+// TSDF grid from xyz points
+// Can return a set of points
 /**
  * NOTE: Due the limited accuracy of the FloatingPoint type, this
  * function doesn't always compute the correct grid index for coordinates
