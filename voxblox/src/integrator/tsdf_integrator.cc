@@ -224,7 +224,6 @@ float TsdfIntegratorBase::computeDistance(const Point& origin,
   const FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
 
   const float sdf = static_cast<float>(dist_G - dist_G_V);
-  std::cout << "TSDFintegrate:" << std::endl;
 
   return sdf;
 }

@@ -57,7 +57,7 @@ class ObjectInstance {
         size_t semantic_label_;        // Semantic label of the object
         Eigen::Vector3d pose_;         // Position (centroid) of the object
         double confidence_;            // V-value of the object
-        std::vector<GlobalIndex> voxel_indices_;
+        std::vector<GlobalIndex> voxel_indices_ = {};
 
 };
 
