@@ -5,9 +5,9 @@
 
 namespace voxblox {
 
-class Object {
+class ObjectInstance {
     public:
-		Object() :
+		ObjectInstance() :
 			id_(-1),
 			semantic_label_(-1),
 			pose_(Eigen::Vector3d::Zero()),
