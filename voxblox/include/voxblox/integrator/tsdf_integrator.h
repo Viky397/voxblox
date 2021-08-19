@@ -287,6 +287,9 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
  * ApproxHashSet. Up to an order of magnitude faster then the other integrators
  * for small voxels.
  */
+
+
+
 class FastTsdfIntegrator : public TsdfIntegratorBase {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
