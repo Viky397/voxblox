@@ -82,6 +82,36 @@ class KalmanTrackerNode {
     	// auto ret = track(det, odom);
     }
 
+    std::vector<double> object_update_probability(
+    		// takes in obj class (Kalman) (a,b,mu, sigma)
+    		// double tau;
+    		// double x;
+    		){
+	s_sq = 1.0 / (1.0 / (sig**2) + 1.0 / (tau**2))  # Equation 19
+	m = s_sq * (mu / (sig**2) + x / (tau**2)) # Equation 20
+
+	C1 = (a / (a + b)) * scipy.stats.norm.pdf(x, loc=mu, scale=sig) # Equation 21
+	C2 = (b / (a + b)) * scipy.stats.uniform.pdf(x, loc=0, scale=3) # Equation 22
+
+	# Normalize
+	C_norm = C1 + C2
+	C1 /= C_norm
+	C2 /= C_norm
+	# print("C1: ", C1)
+	# print("C2: ", C2)
+
+	mu_prime = C1 * m + C2 * mu # Equation 23
+	sig_prime_sq = C1 * (s_sq + m**2) + C2 * (sig**2 + mu**2) - mu_prime**2 # Equation 24
+
+	f = C1 * (a + 1.0) / (a + b + 1.0) + C2 * a / (a + b + 1.0) # Equation 25
+	e = C1 * (a + 1.0) * (a + 2.0) / ((a + b + 1.0) * (a + b + 2.0)) + C2 * a * (a + 1.0) / ((a + b + 1.0) * (a + b + 2.0)) # Equation 26
+
+	mu = mu_prime # Update mu
+	sig = np.sqrt(sig_prime_sq) # Update sigma
+
+	a = (e - f) / (f - e / f) # Update a
+	b = a * (1.0 - f) / f # Update b
+    }
     /*!
        \brief Initializes the static transforms so that they only need to be queried once.
     */

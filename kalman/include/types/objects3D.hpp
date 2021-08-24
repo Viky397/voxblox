@@ -66,6 +66,10 @@ class Object {
     double delta_t = 0.1;                                   /*!< current_time - last_observed_time */
     double first_observed_time;
     double last_updated;
+    double a = 2.0;
+    double b = 2.0;
+    double mu = 0.01;
+    double sigma = 0.1;
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
 
