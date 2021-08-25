@@ -43,6 +43,11 @@
 #include <string>
 #include "utils/kalman.hpp"
 #include "utils/transform_utils.hpp"
+#include<cmath>
+#include <math.h>
+#include <boost/bind.hpp>
+#include <boost/math/distributions/normal.hpp>
+#include <boost/math/distributions/uniform.hpp>
 
 typedef boost::shared_ptr<kalman::KalmanTracker> KalmanPtr;
 
@@ -83,34 +88,34 @@ class KalmanTrackerNode {
     }
 
     std::vector<double> object_update_probability(
-    		// takes in obj class (Kalman) (a,b,mu, sigma)
-    		// double tau;
-    		// double x;
+    	    Object& obj,
+    		double tau,
+    		double x
     		){
-	s_sq = 1.0 / (1.0 / (sig**2) + 1.0 / (tau**2))  # Equation 19
-	m = s_sq * (mu / (sig**2) + x / (tau**2)) # Equation 20
+	float s_sq = 1.0 / (1.0 / (pow(obj.sig, 2)) + 1.0 / (pow(tau, 2)));
+	float m = s_sq * (obj.mu / (pow(obj.sig, 2)) + x / (pow(tau, 2)));
 
-	C1 = (a / (a + b)) * scipy.stats.norm.pdf(x, loc=mu, scale=sig) # Equation 21
-	C2 = (b / (a + b)) * scipy.stats.uniform.pdf(x, loc=0, scale=3) # Equation 22
+	boost::math::normal_distribution<float> norm_dist(obj.mu, obj.sig);
+	boost::math::uniform_distribution<float> uniform_dist(0.0, 1.0);
 
-	# Normalize
-	C_norm = C1 + C2
-	C1 /= C_norm
-	C2 /= C_norm
-	# print("C1: ", C1)
-	# print("C2: ", C2)
+	float C1 = (obj.a / (obj.a + obj.b)) * boost::math::pdf(norm_dist, x);
+	float C2 = (obj.b / (obj.a + obj.b)) * boost::math::pdf(uniform_dist, x);
 
-	mu_prime = C1 * m + C2 * mu # Equation 23
-	sig_prime_sq = C1 * (s_sq + m**2) + C2 * (sig**2 + mu**2) - mu_prime**2 # Equation 24
+	float C_norm = C1 + C2;
+	C1 /= C_norm;
+	C2 /= C_norm;
 
-	f = C1 * (a + 1.0) / (a + b + 1.0) + C2 * a / (a + b + 1.0) # Equation 25
-	e = C1 * (a + 1.0) * (a + 2.0) / ((a + b + 1.0) * (a + b + 2.0)) + C2 * a * (a + 1.0) / ((a + b + 1.0) * (a + b + 2.0)) # Equation 26
+	float mu_prime = C1 * m + C2 * obj.mu;
+	obj.sig = sqrt(C1 * (s_sq + pow(m, 2)) + C2 * (pow(obj.sig, 2) + pow(obj.mu, 2)) - pow(mu_prime, 2));
 
-	mu = mu_prime # Update mu
-	sig = np.sqrt(sig_prime_sq) # Update sigma
+	float f = C1 * (obj.a + 1.0) / (obj.a + obj.b + 1.0) + C2 * obj.a / (obj.a + obj.b + 1.0);
+	float e = C1 * (obj.a + 1.0) * (obj.a + 2.0) / ((obj.a + obj.b + 1.0) * (obj.a + obj.b + 2.0))
+	          + C2 * obj.a * (obj.a + 1.0) / ((obj.a + obj.b + 1.0) * (obj.a + obj.b + 2.0));
 
-	a = (e - f) / (f - e / f) # Update a
-	b = a * (1.0 - f) / f # Update b
+	obj.mu = mu_prime;
+
+	obj.a = (e - f) / (f - e / f);
+	obj.b = obj.a * (1.0 - f) / f ;
     }
     /*!
        \brief Initializes the static transforms so that they only need to be queried once.

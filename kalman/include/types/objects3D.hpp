@@ -69,7 +69,7 @@ class Object {
     double a = 2.0;
     double b = 2.0;
     double mu = 0.01;
-    double sigma = 0.1;
+    double sig = 0.1;
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
 
