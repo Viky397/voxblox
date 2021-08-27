@@ -49,6 +49,7 @@ include_directories(
 set(OBJECT_DETECTION_SRC
   src/object_tracker/object_tracker_node.cpp
   src/secondary_clustering/secondary_clustering_node.cpp
+  src/object_tracker/test_prob.cpp
 )
 
 add_library(object_detection_lib
@@ -66,6 +67,13 @@ add_dependencies(secondary_clustering zeus_msgs_generate_messages_cpp)
 
 # Object Tracker
 add_executable(object_tracker src/object_tracker/object_tracker.cpp)
+target_link_libraries(object_tracker
+  object_detection_lib
+)
+add_dependencies(object_tracker zeus_msgs_generate_messages_cpp)
+
+# Probability Test
+add_executable(test_prob src/object_tracker/test_prob.cpp)
 target_link_libraries(object_tracker
   object_detection_lib
 )
