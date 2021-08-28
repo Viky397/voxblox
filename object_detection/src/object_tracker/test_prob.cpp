@@ -25,7 +25,7 @@ void object_update_probability(
 	double m = s_sq * (obj.mu / (pow(obj.sig, 2)) + x / (pow(tau, 2)));
 	// cout << "ssq: " << s_sq << '\n' << "m: " << m << '\n' << endl;
 
-	boost::math::normal_distribution<double> norm_dist(obj.mu, sqrt(obj.sig));
+	boost::math::normal_distribution<double> norm_dist(obj.mu, (obj.sig));
 	boost::math::uniform_distribution<double> uniform_dist(0.0, 1.0);
 
 	double C1 = (obj.a / (obj.a + obj.b)) * boost::math::pdf(norm_dist, x);
@@ -53,6 +53,7 @@ void object_update_probability(
 
 	cout << "a: " << obj.a << '\n' << "b: " << obj.b << '\n' << endl;
 
+    cout << "Static Probability: " << obj.a / (obj.a + obj.b) << "\n" << endl;
 }
 
 int main(int argc, char *argv[])

@@ -95,7 +95,7 @@ class KalmanTrackerNode {
 		double s_sq = 1.0 / (1.0 / (pow(obj.sig, 2)) + 1.0 / (pow(tau, 2)));
 		double m = s_sq * (obj.mu / (pow(obj.sig, 2)) + x / (pow(tau, 2)));
 
-		boost::math::normal_distribution<double> norm_dist(obj.mu, sqrt(obj.sig));
+		boost::math::normal_distribution<double> norm_dist(obj.mu, obj.sig);
 		boost::math::uniform_distribution<double> uniform_dist(0.0, 1.0);
 
 		double C1 = (obj.a / (obj.a + obj.b)) * boost::math::pdf(norm_dist, x);
