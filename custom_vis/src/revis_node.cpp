@@ -722,9 +722,7 @@ public:
             obstacle_marker.pose.orientation.z = quat_z;
             obstacle_marker.id++;
 
-            if ((bbs[i].type == 1 && bbs[i].confidence > 0.1) ||
-            		(bbs[i].type == 3  && bbs[i].confidence > 0.1) ||
-            				(bbs[i].type == 4  && bbs[i].confidence > 0.1)) {
+            if (bbs[i].confidence > 0.0) {
             	msg_new.markers.push_back(obstacle_marker);
 
             	if (true) { // bbs[i].type == 1 || speed >= 0.8 || bbs[i].confidence > 0.1) {
@@ -742,7 +740,7 @@ public:
     				std::string str_bb_l = std::to_string(bbs[i].l);
     				std::string str_bb_w = std::to_string(bbs[i].w);
     				std::string str_dist = std::to_string(dist);
-    				obstacle_label.text = std::string("Obj ID: ") + std::to_string(bbs[i].ID);
+    				obstacle_label.text = std::string("Obj ID: ") + std::to_string(bbs[i].ID) + std::string("  Conf: ") + str_conf.substr(0, str_conf.find(".") + 3);
 
     						// str_bb_h.substr(0, str_bb_h.find(".") + 3) + std::string("  ") + str_bb_l.substr(0, str_bb_l.find(".") + 3) + std::string("  ") + str_bb_w.substr(0, str_bb_w.find(".") + 3);
     				msg_label_new.markers.push_back(obstacle_label);

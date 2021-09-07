@@ -129,6 +129,8 @@ inline void convertPointcloud(
     const typename pcl::PointCloud<PCLPoint>& pointcloud_pcl,
     const std::shared_ptr<ColorMap>& color_map, Pointcloud* points_C,
     Colors* colors) {
+  points_C->clear();
+  colors->clear();
   points_C->reserve(pointcloud_pcl.size());
   colors->reserve(pointcloud_pcl.size());
   for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {

@@ -124,7 +124,7 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	//! Perform data association between the new detections (dets) and the existing object tracks
 	kalmantracker->association(dets, I);
 	//! Linear Kalman filter update
-	kalmantracker->filter(dets, I);
+	auto sm_results = kalmantracker->filter(dets, I);
 	//! Prune objects that are closer than metricGate to each other or objects outside point_cloud_range.
 	kalmantracker->prune(I);
 	//! Publish ROS message:
@@ -141,6 +141,19 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	auto stop = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed = stop - start;
 	ROS_DEBUG_STREAM("[OBJ] KALMAN TRACKER TIME: " << elapsed.count());
+
+
+	sensor_msgs::PointCloud2 sm_msg;
+	pcl::toROSMsg(sm_results[0], sm_msg);
+	sm_msg.header.frame_id = "map";
+	sm_target_pub_.publish(sm_msg);
+	pcl::toROSMsg(sm_results[1], sm_msg);
+	sm_msg.header.frame_id = "map";
+	sm_source_pub_.publish(sm_msg);
+	pcl::toROSMsg(sm_results[2], sm_msg);
+	sm_msg.header.frame_id = "map";
+	sm_refined_pub_.publish(sm_msg);
+
 	return outputDetections;
 }
 
@@ -169,6 +182,10 @@ void convertToRosMessage(std::vector<Object> object_list,
 		detection.type = object_list[i].type;
 		detection.camera = object_list[i].camera;
 		detection.confidence = object_list[i].confidence;
+
+		sensor_msgs::PointCloud2 cloud_msg;
+		pcl::toROSMsg(*object_list[i].cloud, cloud_msg);
+		detection.cloud = cloud_msg;
 		outputDetections.bbs.push_back(detection);
 	}
 }

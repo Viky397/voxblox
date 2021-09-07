@@ -35,6 +35,7 @@
 #include <Eigen/Geometry>
 #include <ros/ros.h>
 #include <ros/console.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <zeus_msgs/BoundingBox3D.h>
 #include <zeus_msgs/Detections3D.h>
 #include <nav_msgs/Odometry.h>
@@ -43,7 +44,7 @@
 #include <string>
 #include "utils/kalman.hpp"
 #include "utils/transform_utils.hpp"
-#include<cmath>
+#include <cmath>
 #include <math.h>
 #include <boost/bind.hpp>
 #include <boost/math/distributions/normal.hpp>
@@ -64,6 +65,9 @@ class KalmanTrackerNode {
  public:
     KalmanTrackerNode(ros::NodeHandle& nh) : nh_(nh) {
     	det_pub_ = nh_.advertise<zeus_msgs::Detections3D>("/Object/Detections3D", 10);
+    	sm_target_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/SM/Target", 10);
+    	sm_source_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/SM/Source", 10);
+    	sm_refined_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/SM/Refined", 10);
     	init();
     }
 
@@ -87,37 +91,6 @@ class KalmanTrackerNode {
     	// auto ret = track(det, odom);
     }
 
-    void object_update_probability(
-    	    Object& obj,
-    		double tau,
-    		double x
-    		){
-		double s_sq = 1.0 / (1.0 / (pow(obj.sig, 2)) + 1.0 / (pow(tau, 2)));
-		double m = s_sq * (obj.mu / (pow(obj.sig, 2)) + x / (pow(tau, 2)));
-
-		boost::math::normal_distribution<double> norm_dist(obj.mu, obj.sig);
-		boost::math::uniform_distribution<double> uniform_dist(0.0, 1.0);
-
-		double C1 = (obj.a / (obj.a + obj.b)) * boost::math::pdf(norm_dist, x);
-		double C2 = (obj.b / (obj.a + obj.b)) * boost::math::pdf(uniform_dist, x);
-
-		double C_norm = C1 + C2;
-		C1 /= C_norm;
-		C2 /= C_norm;
-
-		double mu_prime = C1 * m + C2 * obj.mu;
-		obj.sig = sqrt(C1 * (s_sq + pow(m, 2)) + C2 * (pow(obj.sig, 2) + pow(obj.mu, 2)) - pow(mu_prime, 2));
-
-		double f = C1 * (obj.a + 1.0) / (obj.a + obj.b + 1.0) + C2 * obj.a / (obj.a + obj.b + 1.0);
-		double e = C1 * (obj.a + 1.0) * (obj.a + 2.0) / ((obj.a + obj.b + 1.0) * (obj.a + obj.b + 2.0))
-				  + C2 * obj.a * (obj.a + 1.0) / ((obj.a + obj.b + 1.0) * (obj.a + obj.b + 2.0));
-
-		obj.mu = mu_prime;
-
-		obj.a = (e - f) / (f - e / f);
-		obj.b = obj.a * (1.0 - f) / f ;
-    }
-
     /*!
        \brief Initializes the static transforms so that they only need to be queried once.
     */
@@ -131,6 +104,9 @@ class KalmanTrackerNode {
     ros::Publisher det_pub_;
     KalmanPtr kalmantracker;                                /*!< Pointer to kalman::KalmanTracker object. */
     std::string world_frame_id = "map";
+    ros::Publisher sm_target_pub_;
+    ros::Publisher sm_source_pub_;
+    ros::Publisher sm_refined_pub_;
 };
 
 #endif  // OBJECT_TRACKER_OBJECT_TRACKER_NODE_H

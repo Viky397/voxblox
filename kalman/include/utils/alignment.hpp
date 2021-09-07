@@ -31,22 +31,19 @@ public:
 		pointCloudTarget = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
 	}
 
-
-	// require surface normal estimation, using nearst K neighbors for computation
 	Eigen::Matrix4f align_point2plane(float ne_nearest_K)
 	{
-		removeFarPoints(pointCloudSource);
-		removeFarPoints(pointCloudTarget);
 		pcl::transformPointCloud(*pointCloudSource, *pointCloudSource, Pose_ini);
 
 
-		pcl::PointCloud<pcl::PointNormal>::Ptr target_PointNormal(new pcl::PointCloud<pcl::PointNormal>);	
+		pcl::PointCloud<pcl::PointNormal>::Ptr target_PointNormal(new pcl::PointCloud<pcl::PointNormal>);
 		pcl::PointCloud<pcl::PointNormal>::Ptr source_PointNormal(new pcl::PointCloud<pcl::PointNormal>);
 		normal_estmation(pointCloudSource, source_PointNormal);
 		normal_estmation(pointCloudTarget, target_PointNormal);
 
 
-		pcl::registration::TransformationEstimation<pcl::PointNormal, pcl::PointNormal, float>::Ptr			te(new pcl::registration::TransformationEstimationPointToPlane<pcl::PointNormal, pcl::PointNormal, float>);
+		pcl::registration::TransformationEstimation<pcl::PointNormal, pcl::PointNormal, float>::Ptr
+			te(new pcl::registration::TransformationEstimationPointToPlane<pcl::PointNormal, pcl::PointNormal, float>);
 		pcl::PointCloud<pcl::PointNormal> pcd_refine;
 		pcl::IterativeClosestPoint<pcl::PointNormal, pcl::PointNormal> icp;
 		icp.setInputTarget(target_PointNormal);
@@ -65,6 +62,41 @@ public:
 		pointCloudTarget->clear();
 
 		return Pose_final;
+	}
+
+	// require surface normal estimation, using nearst K neighbors for computation
+	Eigen::Matrix4f align_point2plane_2(float ne_nearest_K)
+	{
+
+		pcl::registration::TransformationEstimation<pcl::PointNormal, pcl::PointNormal, float>::Ptr
+						te(new pcl::registration::TransformationEstimationPointToPlane<pcl::PointNormal, pcl::PointNormal, float>);
+		pcl::PointCloud<pcl::PointNormal>::Ptr target_PointNormal(new pcl::PointCloud<pcl::PointNormal>);
+					pcl::PointCloud<pcl::PointNormal>::Ptr source_PointNormal(new pcl::PointCloud<pcl::PointNormal>);
+
+
+		for (int i(0); i<max_iter; i++) {
+
+			pcl::transformPointCloud(*pointCloudSource, *pointCloudSource, Pose_ini);
+			normal_estmation(pointCloudSource, source_PointNormal);
+			normal_estmation(pointCloudTarget, target_PointNormal);
+			pcl::PointCloud<pcl::PointNormal> pcd_refine;
+			pcl::IterativeClosestPoint<pcl::PointNormal, pcl::PointNormal> icp;
+			icp.setInputTarget(target_PointNormal);
+			icp.setInputSource(source_PointNormal);
+			icp.setTransformationEstimation(te);
+			icp.setMaxCorrespondenceDistance(outlier_dist);
+			icp.setMaximumIterations(1);
+
+			icp.align(pcd_refine);
+			Eigen::Matrix4f transform = icp.getFinalTransformation();
+			transform(2,3) = 0.0;
+
+			Pose_ini = transform * Pose_ini;
+			source_PointNormal->clear();
+			target_PointNormal->clear();
+		}
+
+		return Pose_ini;
 	}
 
 	Eigen::Matrix4f align_point2point()
@@ -102,6 +134,7 @@ public:
 			pt.z = pcd_source->at(i).z;
 			pointCloudSource->push_back(pt);
 		}
+		removeFarPoints(pointCloudSource);
 	}
 
 	void setTargetPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd_target)
@@ -114,6 +147,7 @@ public:
 			pt.z = pcd_target->at(i).z;
 			pointCloudTarget->push_back(pt);
 		}
+		removeFarPoints(pointCloudTarget);
 	}
 
 	void setSourceInitialPose(Eigen::Matrix4f Pose_ini_)

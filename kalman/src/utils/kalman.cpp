@@ -124,12 +124,12 @@ void KalmanTracker::association(std::vector<zeus_msgs::BoundingBox3D> dets, Eige
     indices = indicesOut;
 }
 
-void KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::Matrix4d Toc) {
+std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::Matrix4d Toc) {
     if (X.size() == 0)
-        return;
+        return std::vector<pcl::PointCloud<pcl::PointXYZRGB> >{};
     if (indices.size() < X.size()) {
         ROS_INFO_STREAM("ERROR: There are less indices than objects, returning!");
-        return;
+        return std::vector<pcl::PointCloud<pcl::PointXYZRGB> >{};
     }
     int N = X.size();
     Eigen::MatrixXd x_check = Eigen::MatrixXd::Zero(xdim, 1);
@@ -137,6 +137,10 @@ void KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::M
     Eigen::MatrixXd Q_adj, R_adj;
     double dist_thresh = 30.0;   // distance threshold for inflating measurement noise
     bool adjust = true;          // turn off/on covarinace adjustment
+
+    pcl::PointCloud<pcl::PointXYZRGB> sources;
+    pcl::PointCloud<pcl::PointXYZRGB> targets;
+    pcl::PointCloud<pcl::PointXYZRGB> refines;
 
     for (int i = 0; i < N; i++) {
         X[i].type = X[i].getType();     // Get the most likely type based on the HMM
@@ -200,12 +204,20 @@ void KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::M
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd_refine(new pcl::PointCloud<pcl::PointXYZRGB>);
             pcl::fromROSMsg(dets[j].cloud, *cloud_pcl);
 
+            sources += *cloud_pcl;
+            targets += *X[i].cloud;
+
             auto sc_tf = matchPCDs(cloud_pcl, X[i]);
+            sc_tf(2,3) = 0.0;
+            std::cout << "[JQ] Scan match result: " << sc_tf << std::endl;
             double dist_change = sqrt(pow(sc_tf(0,3), 2) + pow(sc_tf(1,3), 2) + pow(sc_tf(2,3), 2));
 
             pcl::transformPointCloud(*cloud_pcl, *pcd_refine, sc_tf);
 
-            auto bbox = X[i].mergeNewCloud(pcd_refine);
+            refines += *pcd_refine;
+
+            auto bbox = X[i].mergeNewCloud(cloud_pcl);
+            X[i].updateProbability(dist_change, 0.1);
 
             X[i].x_hat(0,0) = bbox[0];
             X[i].x_hat(1,0) = bbox[1];
@@ -218,13 +230,14 @@ void KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::M
             X[i].w = bbox[4];
             X[i].h = bbox[5];
             X[i].yaw = bbox[6];
-            X[i].confidence = dets[j].confidence;
+            // X[i].confidence = dets[j].confidence;
 
         } else {
 
         }
         X[i].last_updated = current_time;
     }
+    return std::vector<pcl::PointCloud<pcl::PointXYZRGB> >{sources, targets, refines};
 }
 
 void KalmanTracker::prune(Eigen::Matrix4d Tco) {
@@ -536,17 +549,17 @@ static void disentangle_indices(std::vector<int> &cluster, int M, int N, std::ve
 
 Eigen::Matrix4f KalmanTracker::matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target) {
 	kalman::Alignment matcher;
-	matcher.setFarDist(5.0);
+	matcher.setFarDist(4.0);
 	// set ICP iterations
-	matcher.setMaxIter(20);
+	matcher.setMaxIter(10);
 	// set ourlier rejection
-	matcher.setOutlierRejectionDist(0.5);
+	matcher.setOutlierRejectionDist(0.1);
 	// set input point cloud
 	matcher.setSourcePointCloud(source);
 	matcher.setTargetPointCloud(target.cloud);
 	// set initial pose from robot localization
 	matcher.setSourceInitialPose(Eigen::Matrix4f::Identity());
-	Eigen::Matrix4f final_pose = matcher.align_point2plane(50);
+	Eigen::Matrix4f final_pose = matcher.align_point2plane(20);
 	//double dist = sqrt(pow(final_pose(0,3), 2) + pow(final_pose(1,3), 2) + pow(final_pose(2,3), 2));
 	return final_pose;
 }

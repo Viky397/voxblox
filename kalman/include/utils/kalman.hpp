@@ -147,7 +147,7 @@ class KalmanTracker {
       \param Toc Transformation from the sensor frame to the static world frame (odom). We use this to track objects
         in a static world frame. Setting this matrix to identity enables tracking within the sensor frame.
    */
-   void filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::Matrix4d Toc);
+   std::vector<pcl::PointCloud<pcl::PointXYZRGB> > filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::Matrix4d Toc);
 
    /*!
       \brief This method prunes object tracks that are within metricGate of each other. Higher confidence track is kept.

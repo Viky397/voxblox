@@ -68,7 +68,7 @@ class Object {
     double last_updated;
     double a = 2.0;
     double b = 2.0;
-    double mu = 0.01;
+    double mu = 0.0;
     double sig = 0.1;
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -108,6 +108,8 @@ class Object {
     bool checkFlashing(int type, float lower, float upper);
 
     std::vector<double> mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl);
+
+    void updateProbability(double change, double std_change);
 
     friend std::ostream &operator<<(std::ostream &output, const Object &O) {
         output << "x: " << O.x_hat(0, 0) << " y: " << O.x_hat(1, 0) << " z: " << O.x_hat(2, 0) << " vx: " <<

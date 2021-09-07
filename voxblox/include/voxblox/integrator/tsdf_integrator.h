@@ -21,6 +21,7 @@
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/core/object.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/approx_hash_array.h"
 #include "voxblox/utils/timing.h"
@@ -107,6 +108,8 @@ class TsdfIntegratorBase {
   const Config& getConfig() const { return config_; }
 
   void setLayer(Layer<TsdfVoxel>* layer);
+
+  std::vector<ObjectInstance> objects = {};
 
  protected:
   /// Thread safe.
