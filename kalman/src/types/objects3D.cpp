@@ -46,11 +46,8 @@ double Object::getAge(double t) {
         return 0.0;
 }
 
-std::vector<double> Object::mergeNewCloud(sensor_msgs::PointCloud2 cloud_msg) {
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_new_pcl(new pcl::PointCloud<pcl::PointXYZRGB>());
-	pcl::fromROSMsg(cloud_msg, *cloud_new_pcl);
-
-	auto cloud_merged = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB> >(*cloud + *cloud_new_pcl);
+std::vector<double> Object::mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl) {
+	auto cloud_merged = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB> >(*cloud + *cloud_pcl);
 	cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
 
     pcl::UniformSampling<pcl::PointXYZRGB> filter;

@@ -14,6 +14,7 @@
 #include "utils/association.hpp"
 #include "utils/zeus_pcl.hpp"
 #include "utils/hmm.hpp"
+#include "utils/alignment.hpp"
 
 namespace kalman {
 
@@ -85,30 +86,8 @@ void KalmanTracker::association(std::vector<zeus_msgs::BoundingBox3D> dets, Eige
     for (uint i = 0; i < X.size(); i++) {
         if (indices[i] >= 0) {
             if (is_object_tracker) {
-                if (boxSizeSimilarToBarrel(dets[indices[i]]) && classify_barrel) {
-                    std::vector<float> confidences(1, 0.90);
-                    X[i].push_type(unknown_type, confidences);
-                } else if (boxSizeSimilarToDeer(dets[indices[i]]) ||
-                    dets[indices[i]].type == pedestrian_type || boxSizeSimilarToPed(dets[indices[i]])) {
-                    int type;
-                    float conf;
-                    if (dets[indices[i]].type == pedestrian_type &&
-                        boxSizeSimilarToPed(dets[indices[i]])) {
-                        type = pedestrian_type;
-                        conf = dets[indices[i]].confidence;
-                    } else if (boxSizeSimilarToDeer(dets[indices[i]])) {
-                        conf = dynamic_obj_conf;
-                        type = unknown_dynamic_type;
-                    } else {
-                        type = unknown_type;
-                        conf = static_obj_conf;
-                    }
-                    std::vector<float> confidences(1, conf);
-                    X[i].push_type(type, confidences);
-                } else {
-                    std::vector<float> confidences(1, static_obj_conf);
-                    X[i].push_type(unknown_type, confidences);
-                }
+                std::vector<float> confidences(1, dets[indices[i]].confidence);
+                X[i].push_type(unknown_type, confidences);
             } else {
                 if (dets[indices[i]].class_confidences.size() > 0) {
                     X[i].push_type(dets[indices[i]].type, dets[indices[i]].class_confidences);
@@ -214,7 +193,19 @@ void KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::M
             Eigen::MatrixXd temp = C * P_check * C.transpose() + R_adj;
             Eigen::MatrixXd K = (P_check * C.transpose()) * temp.inverse();
 
-            auto bbox = X[i].mergeNewCloud(dets[j].cloud);
+
+
+
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl(new pcl::PointCloud<pcl::PointXYZRGB>());
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd_refine(new pcl::PointCloud<pcl::PointXYZRGB>);
+            pcl::fromROSMsg(dets[j].cloud, *cloud_pcl);
+
+            auto sc_tf = matchPCDs(cloud_pcl, X[i]);
+            double dist_change = sqrt(pow(sc_tf(0,3), 2) + pow(sc_tf(1,3), 2) + pow(sc_tf(2,3), 2));
+
+            pcl::transformPointCloud(*cloud_pcl, *pcd_refine, sc_tf);
+
+            auto bbox = X[i].mergeNewCloud(pcd_refine);
 
             X[i].x_hat(0,0) = bbox[0];
             X[i].x_hat(1,0) = bbox[1];
@@ -389,7 +380,7 @@ Object KalmanTracker::create_new(zeus_msgs::BoundingBox3D &det, int &objectID, d
         x.push_type(det.type, confidences);
     }
     x.type = x.getType();
-    x.confidence = 0;
+    x.confidence = det.confidence;
     x.ID = objectID;
     objectID++;
     x.P_hat = P0;
@@ -543,6 +534,23 @@ static void disentangle_indices(std::vector<int> &cluster, int M, int N, std::ve
     }
 }
 
+Eigen::Matrix4f KalmanTracker::matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target) {
+	kalman::Alignment matcher;
+	matcher.setFarDist(5.0);
+	// set ICP iterations
+	matcher.setMaxIter(20);
+	// set ourlier rejection
+	matcher.setOutlierRejectionDist(0.5);
+	// set input point cloud
+	matcher.setSourcePointCloud(source);
+	matcher.setTargetPointCloud(target.cloud);
+	// set initial pose from robot localization
+	matcher.setSourceInitialPose(Eigen::Matrix4f::Identity());
+	Eigen::Matrix4f final_pose = matcher.align_point2plane(50);
+	//double dist = sqrt(pow(final_pose(0,3), 2) + pow(final_pose(1,3), 2) + pow(final_pose(2,3), 2));
+	return final_pose;
+}
+
 void KalmanTracker::optimalAssociation(std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int> &indices,
                                        std::vector<int> &notassoc, double current_time) {
     uint N = X.size();
@@ -575,6 +583,8 @@ void KalmanTracker::optimalAssociation(std::vector<zeus_msgs::BoundingBox3D> &de
     }
     std::vector<std::vector<int>> clusters;
     zeus_pcl::cluster_point_cloud(pc, 1, (float) metricGate, clusters);
+
+
     notassoc.clear();
     // Loop over the object-detection clusters
     for (uint i = 0; i < clusters.size(); i++) {

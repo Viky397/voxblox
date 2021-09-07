@@ -103,7 +103,7 @@ class Object {
     */
     bool checkFlashing(int type, float lower, float upper);
 
-    std::vector<double> mergeNewCloud(sensor_msgs::PointCloud2 cloud);
+    std::vector<double> mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl);
 
     friend std::ostream &operator<<(std::ostream &output, const Object &O) {
         output << "x: " << O.x_hat(0, 0) << " y: " << O.x_hat(1, 0) << " z: " << O.x_hat(2, 0) << " vx: " <<

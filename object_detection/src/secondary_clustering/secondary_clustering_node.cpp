@@ -95,8 +95,9 @@ void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,
         detection.h = bbox.at(5);
         detection.yaw = bbox.at(6);
         detection.type = unknown_type;
-        detection.confidence = 0.9;
+        detection.confidence = 0.85;
         detection.camera = 1;
+
         outputDetections.bbs.push_back(detection);
     }
 }

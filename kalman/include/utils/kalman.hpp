@@ -319,6 +319,8 @@ class KalmanTracker {
     bool boxSizeSimilarToPed(const zeus_msgs::BoundingBox3D& obj);
     bool boxSizeSimilarToBarrel(const Object& obj);
     bool boxSizeSimilarToBarrel(const zeus_msgs::BoundingBox3D& obj);
+
+    Eigen::Matrix4f matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target);
 };
 
 }  // namespace kalman
