@@ -43,6 +43,11 @@
 #include <string>
 #include "utils/kalman.hpp"
 #include "utils/transform_utils.hpp"
+#include<cmath>
+#include <math.h>
+#include <boost/bind.hpp>
+#include <boost/math/distributions/normal.hpp>
+#include <boost/math/distributions/uniform.hpp>
 
 typedef boost::shared_ptr<kalman::KalmanTracker> KalmanPtr;
 
@@ -80,6 +85,37 @@ class KalmanTrackerNode {
     */
     void callback(const zeus_msgs::Detections3D::ConstPtr & det, const nav_msgs::OdometryConstPtr& odom) {
     	// auto ret = track(det, odom);
+    }
+
+    void object_update_probability(
+    	    Object& obj,
+    		double tau,
+    		double x
+    		){
+		double s_sq = 1.0 / (1.0 / (pow(obj.sig, 2)) + 1.0 / (pow(tau, 2)));
+		double m = s_sq * (obj.mu / (pow(obj.sig, 2)) + x / (pow(tau, 2)));
+
+		boost::math::normal_distribution<double> norm_dist(obj.mu, obj.sig);
+		boost::math::uniform_distribution<double> uniform_dist(0.0, 1.0);
+
+		double C1 = (obj.a / (obj.a + obj.b)) * boost::math::pdf(norm_dist, x);
+		double C2 = (obj.b / (obj.a + obj.b)) * boost::math::pdf(uniform_dist, x);
+
+		double C_norm = C1 + C2;
+		C1 /= C_norm;
+		C2 /= C_norm;
+
+		double mu_prime = C1 * m + C2 * obj.mu;
+		obj.sig = sqrt(C1 * (s_sq + pow(m, 2)) + C2 * (pow(obj.sig, 2) + pow(obj.mu, 2)) - pow(mu_prime, 2));
+
+		double f = C1 * (obj.a + 1.0) / (obj.a + obj.b + 1.0) + C2 * obj.a / (obj.a + obj.b + 1.0);
+		double e = C1 * (obj.a + 1.0) * (obj.a + 2.0) / ((obj.a + obj.b + 1.0) * (obj.a + obj.b + 2.0))
+				  + C2 * obj.a * (obj.a + 1.0) / ((obj.a + obj.b + 1.0) * (obj.a + obj.b + 2.0));
+
+		obj.mu = mu_prime;
+
+		obj.a = (e - f) / (f - e / f);
+		obj.b = obj.a * (1.0 - f) / f ;
     }
 
     /*!
