@@ -63,6 +63,9 @@ static bool is_member(std::vector<int> v, int x) {
 }
 
 void KalmanTracker::association(std::vector<zeus_msgs::BoundingBox3D> dets, Eigen::Matrix4d Toc) {
+	for (auto& obj : X) {
+		obj.is_observed = false;
+	}
     indices = std::vector<int>(X.size(), -1);
     std::vector<int> notassoc;
     for (uint j = 0; j < dets.size(); j++) {
@@ -104,9 +107,7 @@ void KalmanTracker::association(std::vector<zeus_msgs::BoundingBox3D> dets, Eige
             }
             X[i].delta_t = current_time - X[i].last_observed_time;
             X[i].last_observed_time = current_time;
-        } else if (X[i].type == pedestrian_type
-                && X[i].getLostTime(current_time) > delete_time) {
-            delete_indices.push_back(i);
+            X[i].is_observed = true;
         } else if ((X[i].type == unknown_type || X[i].type == unknown_dynamic_type)
                 && X[i].getLostTime(current_time) > delete_time_unknown) {
             delete_indices.push_back(i);
@@ -208,6 +209,8 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
             targets += *X[i].cloud;
 
             auto sc_tf = matchPCDs(cloud_pcl, X[i]);
+            //sc_tf(0,2) = 0.0;
+            //sc_tf(1,2) = 0.0;
             sc_tf(2,3) = 0.0;
             std::cout << "[JQ] Scan match result: " << sc_tf << std::endl;
             double dist_change = sqrt(pow(sc_tf(0,3), 2) + pow(sc_tf(1,3), 2) + pow(sc_tf(2,3), 2));
@@ -241,8 +244,10 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
 }
 
 void KalmanTracker::prune(Eigen::Matrix4d Tco) {
+	std::vector<Object> Xout;
+	std::vector<int> delete_indices;
     // First, prune objects outside the BEV
-    std::vector<Object> Xout;
+    /*
     for (uint i = 0; i < X.size(); i++) {
         Eigen::MatrixXd xbar = Eigen::MatrixXd::Ones(4, 1);
         xbar(0, 0) = X[i].x_hat(0, 0);
@@ -255,8 +260,8 @@ void KalmanTracker::prune(Eigen::Matrix4d Tco) {
         }
     }
     X = Xout;
+    */
     // Then prune objects that are too close to each other or overlap
-    std::vector<int> delete_indices;
     for (uint i = 0; i < X.size(); i++) {
         for (uint j = i + 1; j < X.size(); j++) {
             double dMetric = dist(X[i].x_hat, X[j].x_hat);
@@ -264,13 +269,16 @@ void KalmanTracker::prune(Eigen::Matrix4d Tco) {
                 // Higher confidence tracks wins
                 if (X[i].confidence < X[j].confidence) {
                     delete_indices.push_back(i);
+                    X[j].mergeNewCloud(X[i].cloud);
                 } else {
                     delete_indices.push_back(j);
+                    X[i].mergeNewCloud(X[j].cloud);
                 }
             }
         }
     }
     Xout.clear();
+
     for (uint i = 0; i < X.size(); i++) {
         if (!is_member(delete_indices, i)) {
             Xout.push_back(X[i]);
@@ -398,6 +406,7 @@ Object KalmanTracker::create_new(zeus_msgs::BoundingBox3D &det, int &objectID, d
     objectID++;
     x.P_hat = P0;
     x.camera = det.camera;
+    x.is_observed = true;
     x.last_observed_time = current_time;
     x.first_observed_time = current_time;
     x.last_updated = current_time;

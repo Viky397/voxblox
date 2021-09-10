@@ -62,6 +62,7 @@ class Object {
     std::deque<int> past_types;                             /*!< Only used for detecting flashing red lights. */
     HMMPtr hmm;                                             /*!< Pointer to HiddenMarkovModel object */
     int camera = 1;                                         /*!< Which camera was the object observed in. */
+    bool is_observed = false;
     double last_observed_time;
     double delta_t = 0.1;                                   /*!< current_time - last_observed_time */
     double first_observed_time;

@@ -182,6 +182,7 @@ void convertToRosMessage(std::vector<Object> object_list,
 		detection.type = object_list[i].type;
 		detection.camera = object_list[i].camera;
 		detection.confidence = object_list[i].confidence;
+		detection.is_observed = object_list[i].is_observed;
 
 		sensor_msgs::PointCloud2 cloud_msg;
 		pcl::toROSMsg(*object_list[i].cloud, cloud_msg);

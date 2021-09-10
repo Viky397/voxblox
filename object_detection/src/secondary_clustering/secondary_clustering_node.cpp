@@ -18,7 +18,7 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
     Eigen::Matrix4d r_oc = Eigen::Matrix4d::Identity();
     C_oc.block<3,3>(0,0) = T_oc.block<3,3>(0,0);
     zeus_pcl::transform_cloud(pc, C_oc);
-    zeus_pcl::passthrough(pc, gp_prior, -2.5, 2.5, -2.5, 2.5, 0.1, 3.5);
+    zeus_pcl::passthrough(pc, gp_prior, -3, 3, -3, 3, 0.1, 3.5);
 
     r_oc.block<3,1>(0,3) = T_oc.block<3,1>(0,3);
     zeus_pcl::transform_cloud(gp_prior, r_oc);

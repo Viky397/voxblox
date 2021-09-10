@@ -29,7 +29,8 @@ void fromPCLRGB(const pcl::PointCloud<pcl::PointXYZRGB>& pclIn, PointCloudPtr cl
 		cloudOut->points[i].g = pclIn.points[i].g;
 		cloudOut->points[i].b = pclIn.points[i].b;
 		cloudOut->points[i].c = 1.0;
-		//std::cout << "color pcl: r: " << cloudOut->points[i].r << " g: " << cloudOut->points[i].g << " b: "<< cloudOut->points[i].b << std::endl;
+		// std::cout << "[JQ] cloud in: r: " << (int)pclIn.points[i].r << " g: " << (int)pclIn.points[i].g << " b: "<< (int)pclIn.points[i].b << std::endl;
+		// std::cout << "[JQ] cloud out: r: " << cloudOut->points[i].r << " g: " << cloudOut->points[i].g << " b: "<< cloudOut->points[i].b << std::endl;
 	  }
 }
 
@@ -40,9 +41,9 @@ void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr c
     uint32_t x_offset = ros_msg->fields[0].offset;  // float (32)
     uint32_t y_offset = ros_msg->fields[1].offset;  // float (32)
     uint32_t z_offset = ros_msg->fields[2].offset;  // float (32)
-    uint32_t r_offset = ros_msg->fields[3].offset;
+    uint32_t b_offset = ros_msg->fields[3].offset;
     uint32_t g_offset = ros_msg->fields[3].offset+1;
-    uint32_t b_offset = ros_msg->fields[3].offset+2;
+    uint32_t r_offset = ros_msg->fields[3].offset+2;
     uint j = 0;
     auto *data = ros_msg->data.data();
     uint total_size = ros_msg->width * ros_msg->height;
@@ -50,9 +51,9 @@ void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr c
         cloudOut->points[j].x = getFloatFromByteArray(data, i + x_offset);
         cloudOut->points[j].y = getFloatFromByteArray(data, i + y_offset);
         cloudOut->points[j].z = getFloatFromByteArray(data, i + z_offset);
-        cloudOut->points[j].r = ros_msg->data[i + r_offset];
-        cloudOut->points[j].g = ros_msg->data[i + g_offset];
         cloudOut->points[j].b = ros_msg->data[i + b_offset];
+        cloudOut->points[j].g = ros_msg->data[i + g_offset];
+        cloudOut->points[j].r = ros_msg->data[i + r_offset];
         cloudOut->points[j].c = 1.0;
         std::cout << "color: r: " << cloudOut->points[j].r << " g: " << cloudOut->points[j].g << " b: "<< cloudOut->points[j].b << std::endl;
         j++;
@@ -89,9 +90,9 @@ void toROSMsg(PointCloudPtr pc, sensor_msgs::PointCloud2& msg, std::string frame
     uint32_t x_offset = 0;
     uint32_t y_offset = 4;
     uint32_t z_offset = 8;
-    uint32_t r_offset = 16;
+    uint32_t b_offset = 16;
     uint32_t g_offset = 17;
-    uint32_t b_offset = 18;
+    uint32_t r_offset = 18;
     msg.point_step = point_step;
     msg.width = pc->size();
     msg.height = 1;
@@ -104,9 +105,9 @@ void toROSMsg(PointCloudPtr pc, sensor_msgs::PointCloud2& msg, std::string frame
         getByteArrayFromFloat(&msg.data[i + x_offset], pc->points[j].x);
         getByteArrayFromFloat(&msg.data[i + y_offset], pc->points[j].y);
         getByteArrayFromFloat(&msg.data[i + z_offset], pc->points[j].z);
-        msg.data[i + r_offset] = pc->points[j].r;
-        msg.data[i + g_offset] = pc->points[j].g;
         msg.data[i + b_offset] = pc->points[j].b;
+        msg.data[i + g_offset] = pc->points[j].g;
+        msg.data[i + r_offset] = pc->points[j].r;
         j++;
     }
 
@@ -130,7 +131,7 @@ void toROSMsg(PointCloudPtr pc, sensor_msgs::PointCloud2& msg, std::string frame
     msg.fields.push_back(field);
 
     field.name = "rgb";
-    field.offset = r_offset;
+    field.offset = b_offset;
     field.datatype = 7;
     field.count = 1;
     msg.fields.push_back(field);
