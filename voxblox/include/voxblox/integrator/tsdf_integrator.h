@@ -101,13 +101,19 @@ class TsdfIntegratorBase {
   virtual void integratePointCloud(const Transformation& T_G_C,
                                    const Pointcloud& points_C,
                                    const Colors& colors,
-								   std::vector<GlobalIndex>& changed_ids,
+								   GlobalIndexVector& changed_ids,
                                    const bool freespace_points = false) = 0;
 
   /// Returns a CONST ref of the config.
   const Config& getConfig() const { return config_; }
 
   void setLayer(Layer<TsdfVoxel>* layer);
+
+  Layer<TsdfVoxel>* getLayer() {
+	  return layer_;
+  }
+
+  virtual void clearLayerByIndices(const GlobalIndexVector& indices) {}
 
   std::vector<ObjectInstance> objects = {};
 
@@ -225,12 +231,12 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-						   std::vector<GlobalIndex>& changed_ids,
+						   GlobalIndexVector& changed_ids,
                            const bool freespace_points = false);
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
-						 std::vector<GlobalIndex>& changed_ids_thread,
+						 GlobalIndexVector& changed_ids_thread,
                          const bool freespace_points,
                          ThreadSafeIndex* index_getter);
 };
@@ -249,7 +255,7 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-						   std::vector<GlobalIndex>& changed_ids,
+						   GlobalIndexVector& changed_ids,
                            const bool freespace_points = false);
 
  protected:
@@ -302,13 +308,13 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
-						 std::vector<GlobalIndex>& changed_ids_thread,
+						 GlobalIndexVector& changed_ids_thread,
                          const bool freespace_points,
                          ThreadSafeIndex* index_getter);
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-						   std::vector<GlobalIndex>& changed_ids,
+						   GlobalIndexVector& changed_ids,
                            const bool freespace_points = false);
 
  private:

@@ -243,7 +243,7 @@ float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
 void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
-											   std::vector<GlobalIndex>& changed_ids,
+											   GlobalIndexVector& changed_ids,
                                                const bool freespace_points
 											   ) {
   timing::Timer integrate_timer("integrate/simple");
@@ -252,7 +252,7 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   std::unique_ptr<ThreadSafeIndex> index_getter(
       ThreadSafeIndexFactory::get(config_.integration_order_mode, points_C));
 
-  std::vector<std::vector<GlobalIndex> > changed_ids_threads(config_.integrator_threads);
+  std::vector<GlobalIndexVector > changed_ids_threads(config_.integrator_threads);
   std::list<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
     integration_threads.emplace_back(&SimpleTsdfIntegrator::integrateFunction,
@@ -273,7 +273,7 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
 void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                                              const Pointcloud& points_C,
                                              const Colors& colors,
-                                             std::vector<GlobalIndex>& changed_ids_thread,
+											 GlobalIndexVector& changed_ids_thread,
 											 const bool freespace_points,
 											 ThreadSafeIndex* index_getter) {
   DCHECK(index_getter != nullptr);
@@ -312,7 +312,7 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
-											   std::vector<GlobalIndex>& changed_ids,
+											   GlobalIndexVector& changed_ids,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate/merged");
   CHECK_EQ(points_C.size(), colors.size());
@@ -494,7 +494,7 @@ void MergedTsdfIntegrator::integrateRays(
 void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                                            const Pointcloud& points_C,
                                            const Colors& colors,
-										   std::vector<GlobalIndex>& changed_ids_thread,
+										   GlobalIndexVector& changed_ids_thread,
                                            const bool freespace_points,
                                            ThreadSafeIndex* index_getter) {
   DCHECK(index_getter != nullptr);
@@ -566,7 +566,7 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const Pointcloud& points_C,
                                              const Colors& colors,
-											 std::vector<GlobalIndex>& changed_ids,
+											 GlobalIndexVector& changed_ids,
                                              const bool freespace_points) {
   timing::Timer integrate_timer("integrate/fast");
   CHECK_EQ(points_C.size(), colors.size());
@@ -583,7 +583,7 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   std::unique_ptr<ThreadSafeIndex> index_getter(
       ThreadSafeIndexFactory::get(config_.integration_order_mode, points_C));
 
-  std::vector<std::vector<GlobalIndex> > changed_ids_threads(config_.integrator_threads);
+  std::vector<GlobalIndexVector > changed_ids_threads(config_.integrator_threads);
   std::list<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
     integration_threads.emplace_back(&FastTsdfIntegrator::integrateFunction,

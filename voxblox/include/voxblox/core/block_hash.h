@@ -77,6 +77,14 @@ typedef std::unordered_set<LongIndex, LongIndexHash, std::equal_to<LongIndex>,
                            Eigen::aligned_allocator<LongIndex> >
     LongIndexSet;
 
+inline LongIndexVector set_difference(const LongIndexSet& lhs, const LongIndexSet& rhs) {
+	// find elements in lhs but not in rhs
+	LongIndexVector diff;
+	std::copy_if(lhs.begin(), lhs.end(), std::back_inserter(diff),
+			[&rhs](const LongIndex& idx) { return rhs.count(idx) == 0; });
+	return diff;
+}
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_BLOCK_HASH_H_

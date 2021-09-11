@@ -346,7 +346,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
     ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
   }
 
-  std::vector<GlobalIndex> changed_voxel_ids;
+  GlobalIndexVector changed_voxel_ids;
   ros::WallTime start = ros::WallTime::now();
   integratePointcloud(T_G_C_refined, points_C, colors, changed_voxel_ids, is_freespace_pointcloud);
   ros::WallTime end = ros::WallTime::now();
@@ -457,7 +457,7 @@ void TsdfServer::insertFreespacePointcloud(
 void TsdfServer::integratePointcloud(const Transformation& T_G_C,
                                      const Pointcloud& ptcloud_C,
                                      const Colors& colors,
-									 std::vector<GlobalIndex>& changed_ids,
+									 GlobalIndexVector& changed_ids,
                                      const bool is_freespace_pointcloud) {
   CHECK_EQ(ptcloud_C.size(), colors.size());
   tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors, changed_ids,
