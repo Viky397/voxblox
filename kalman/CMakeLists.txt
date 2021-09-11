@@ -48,6 +48,7 @@ set(KALMAN_UTILS_SRC
   src/utils/transform_utils.cpp
   src/utils/hmm.cpp
   src/types/objects3D.cpp
+  src/types/Pose2.cpp
 )
 
 add_library(kalman_lib

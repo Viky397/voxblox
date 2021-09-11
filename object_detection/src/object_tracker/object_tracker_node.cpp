@@ -113,7 +113,7 @@ void KalmanTrackerNode::init() {
 	initialize_transforms();
 }
 
-zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &det) {
+zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &det, const Eigen::Matrix4f& robot_pose) {
 	std::cout << "Raw det received " << det.bbs.size() << std::endl;
 	auto start = std::chrono::high_resolution_clock::now();
 	std::vector<zeus_msgs::BoundingBox3D> dets = det.bbs;
@@ -122,11 +122,11 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	//Eigen::Matrix4d Toc = Toi * Tic2;
 	kalmantracker->setCurrentTime(det.header.stamp.toSec());
 	//! Perform data association between the new detections (dets) and the existing object tracks
-	kalmantracker->association(dets, I);
+	kalmantracker->association(dets, robot_pose);
 	//! Linear Kalman filter update
-	auto sm_results = kalmantracker->filter(dets, I);
+	auto sm_results = kalmantracker->filter(dets, robot_pose);
 	//! Prune objects that are closer than metricGate to each other or objects outside point_cloud_range.
-	kalmantracker->prune(I);
+	kalmantracker->prune(robot_pose);
 	//! Publish ROS message:
 	zeus_msgs::Detections3D outputDetections;
 	outputDetections.header.stamp = det.header.stamp;

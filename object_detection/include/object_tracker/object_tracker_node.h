@@ -75,7 +75,7 @@ class KalmanTrackerNode {
 
     void setKalmanTracker(KalmanPtr kalmantracker_) {kalmantracker = kalmantracker_;}
 
-    zeus_msgs::Detections3D track(const zeus_msgs::Detections3D &det);
+    zeus_msgs::Detections3D track(const zeus_msgs::Detections3D &det, const Eigen::Matrix4f& robot_pose=Eigen::Matrix4f::Identity());
 
     /*!
        \brief Incorporates new detections into the current list of object tracks.

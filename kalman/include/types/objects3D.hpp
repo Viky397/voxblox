@@ -43,6 +43,7 @@
 
 #include "utils/hmm.hpp"
 #include "utils/zeus_pcl.hpp"
+#include "types/Pose2.hpp"
 
 //* Object
 /**
@@ -111,6 +112,12 @@ class Object {
     std::vector<double> mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl);
 
     void updateProbability(double change, double std_change);
+
+    bool expectedToObserve(Pose2 cam_pose, float fov);
+
+    Pose2 getPose2() {
+    	return Pose2(x_hat(0, 0), x_hat(1, 0), 0);
+    }
 
     friend std::ostream &operator<<(std::ostream &output, const Object &O) {
         output << "x: " << O.x_hat(0, 0) << " y: " << O.x_hat(1, 0) << " z: " << O.x_hat(2, 0) << " vx: " <<

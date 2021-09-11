@@ -31,7 +31,7 @@ public:
 		pointCloudTarget = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
 	}
 
-	Eigen::Matrix4f align_point2plane(float ne_nearest_K)
+	Eigen::Matrix4f align_point2plane(float ne_nearest_K, bool limit_to_2d = true)
 	{
 		pcl::transformPointCloud(*pointCloudSource, *pointCloudSource, Pose_ini);
 
@@ -61,6 +61,15 @@ public:
 		pointCloudSource->clear();
 		pointCloudTarget->clear();
 
+		if (limit_to_2d) {
+			Pose_final(0,2) = 0.0;
+			Pose_final(1,2) = 0.0;
+		    Pose_final(2,0) = 0.0;
+		    Pose_final(2,1) = 0.0;
+		    Pose_final(2,2) = 1.0;
+		    Pose_final(2,3) = 0.0;
+		}
+
 		return Pose_final;
 	}
 
@@ -89,6 +98,11 @@ public:
 
 			icp.align(pcd_refine);
 			Eigen::Matrix4f transform = icp.getFinalTransformation();
+			transform(0,2) = 0.0;
+			transform(1,2) = 0.0;
+			transform(2,0) = 0.0;
+			transform(2,1) = 0.0;
+			transform(2,2) = 1.0;
 			transform(2,3) = 0.0;
 
 			Pose_ini = transform * Pose_ini;

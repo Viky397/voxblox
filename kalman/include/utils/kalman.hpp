@@ -36,6 +36,7 @@
 #include <map>
 #include <iostream>
 #include "types/objects3D.hpp"
+#include "types/Pose2.hpp"
 
 namespace kalman {
 
@@ -132,7 +133,7 @@ class KalmanTracker {
       \param Toc Transformation from the sensor frame to the static world frame (odom). We use this to track objects
         in a static world frame. Setting this matrix to identity enables tracking within the sensor frame.
    */
-   void association(std::vector<zeus_msgs::BoundingBox3D> dets, Eigen::Matrix4d Toc);
+   void association(std::vector<zeus_msgs::BoundingBox3D> dets, Eigen::Matrix4f robot_pose);
 
    /*!
       \brief This method performs the kalman filtering update step, incorporating new measurements.
@@ -147,7 +148,7 @@ class KalmanTracker {
       \param Toc Transformation from the sensor frame to the static world frame (odom). We use this to track objects
         in a static world frame. Setting this matrix to identity enables tracking within the sensor frame.
    */
-   std::vector<pcl::PointCloud<pcl::PointXYZRGB> > filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::Matrix4d Toc);
+   std::vector<pcl::PointCloud<pcl::PointXYZRGB> > filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::Matrix4f robot_pose);
 
    /*!
       \brief This method prunes object tracks that are within metricGate of each other. Higher confidence track is kept.
@@ -156,7 +157,7 @@ class KalmanTracker {
 
       \param Tco Transformation from the static world frame to the sensor frame.
    */
-   void prune(Eigen::Matrix4d Tco);
+   void prune(Eigen::Matrix4f robot_pose);
 
    /*!
       \brief This method prunes object tracks that overlap when projected onto the image plane.
@@ -320,7 +321,11 @@ class KalmanTracker {
     bool boxSizeSimilarToBarrel(const Object& obj);
     bool boxSizeSimilarToBarrel(const zeus_msgs::BoundingBox3D& obj);
 
-    Eigen::Matrix4f matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target);
+    Eigen::Matrix4f matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target, int max_iter=10);
+
+    float norm(Eigen::Matrix4f p) {
+    	return sqrt(pow(p(0,3), 2) + pow(p(1,3), 2) + pow(p(2,3), 2));
+    }
 };
 
 }  // namespace kalman

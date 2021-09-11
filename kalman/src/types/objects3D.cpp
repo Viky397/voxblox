@@ -68,16 +68,16 @@ std::vector<double> Object::mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr
 
 void Object::updateProbability(double change, double std_change) {
 	std::cout << "[JQ] Object " << ID << " amount of change " << change << std::endl;
+
 	double s_sq = 1.0 / (1.0 / (pow(sig, 2)) + 1.0 / (pow(std_change, 2)));
 	double m = s_sq * (mu / (pow(sig, 2)) + change / (pow(std_change, 2)));
 
 	boost::math::normal_distribution<double> norm_dist(mu, sig);
-	boost::math::uniform_distribution<double> uniform_dist(0.0, 1.0);
+	boost::math::uniform_distribution<double> uniform_dist(0.0, 2.0);
 
 	// double C1 = (a / (a + b)) * boost::math::pdf(norm_dist, change);
-	double C1 = (a / (a + b)) * std::max(boost::math::pdf(norm_dist, change), 0.01);
-	double C2 = 0.0;
-	if (change <= 1.0) C2 = (b / (a + b)) * boost::math::pdf(uniform_dist, change);
+	double C1 = (a / (a + b)) * std::max(boost::math::pdf(norm_dist, change), 0.0001);
+	double C2 = change >= 1.999 ? 1000 : (b / (a + b)) * boost::math::pdf(uniform_dist, change);
 
 	double C_norm = C1 + C2;
 	C1 /= C_norm;
@@ -98,4 +98,21 @@ void Object::updateProbability(double change, double std_change) {
 	confidence = a / (a + b);
 
 	std::cout << "[JQ]   updated static prob of " << confidence << std::endl;
+}
+
+bool Object::expectedToObserve(Pose2 cam_pose, float fov) {
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr samples(new pcl::PointCloud<pcl::PointXYZRGB>());
+	pcl::UniformSampling<pcl::PointXYZRGB> filter;
+	filter.setInputCloud(cloud);
+	filter.setRadiusSearch(0.25f);
+	filter.filter(*samples);
+
+	for (const auto& p : samples->points) {
+		Pose2 lm(p.x, p.y, 0);
+		Pose2 T_c_l = lm - cam_pose;
+		if (T_c_l.x() > 0.1 && T_c_l.norm() < 3 && fabs(T_c_l.y() / T_c_l.x()) < (fov/2.0/45)) {
+			return true;
+		}
+	}
+	return false;
 }
