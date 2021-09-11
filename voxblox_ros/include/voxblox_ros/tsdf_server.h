@@ -240,7 +240,7 @@ class TsdfServer {
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
   std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
-  ros::Publisher my_pcl_pub_;
+  ros::Publisher cell_removal_pcd_pub_;
 
   /// ICP matcher
   std::shared_ptr<ICP> icp_;

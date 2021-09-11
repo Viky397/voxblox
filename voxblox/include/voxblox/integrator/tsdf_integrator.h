@@ -113,7 +113,9 @@ class TsdfIntegratorBase {
 	  return layer_;
   }
 
-  virtual void clearLayerByIndices(const GlobalIndexVector& indices) {}
+  virtual Pointcloud clearLayerByIndices(const GlobalIndexVector& indices) {
+	  return Pointcloud{};
+  }
 
   std::vector<ObjectInstance> objects = {};
 

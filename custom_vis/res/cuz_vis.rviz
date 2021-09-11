@@ -8,7 +8,6 @@ Panels:
         - /Status1
         - /TF1/Frames1
         - /TF1/Tree1
-        - /PointCloud21
         - /Image1
       Splitter Ratio: 0.628025472164154
     Tree Height: 1197
@@ -65,6 +64,8 @@ Visualization Manager:
           Value: true
         chassis_link:
           Value: false
+        front_laser:
+          Value: true
         imu_link:
           Value: true
         laser_odom:
@@ -101,6 +102,8 @@ Visualization Manager:
             {}
           odom:
             base_link:
+              front_laser:
+                {}
               imu_link:
                 {}
               laser_odom:
@@ -114,7 +117,7 @@ Visualization Manager:
     - Class: rviz/MarkerArray
       Enabled: false
       Marker Topic: /revis_node/detected_obstacles_1
-      Name: Obstacles 1
+      Name: Objects
       Namespaces:
         {}
       Queue Size: 100
@@ -218,34 +221,6 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: RGB8
-      Decay Time: 0
-      Enabled: false
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Min Color: 0; 0; 0
-      Name: PointCloud2
-      Position Transformer: XYZ
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.10000000149011612
-      Style: Squares
-      Topic: /kimera_semantics_node/my_pcl
-      Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: false
     - Class: rviz/Image
       Enabled: true
       Image Topic: /front/realsense/segmentation/image_raw
@@ -282,11 +257,11 @@ Visualization Manager:
       Color: 78; 154; 6
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
-      Name: PointCloud2
+      Name: ICPTarget
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
@@ -297,7 +272,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -310,11 +285,11 @@ Visualization Manager:
       Color: 245; 121; 0
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
-      Name: PointCloud2
+      Name: ICPResult
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
@@ -325,7 +300,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -338,11 +313,11 @@ Visualization Manager:
       Color: 32; 74; 135
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
-      Name: PointCloud2
+      Name: ICPSource
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
@@ -350,6 +325,34 @@ Visualization Manager:
       Size (m): 0.009999999776482582
       Style: Points
       Topic: /SM/Source
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 25; 0
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: PointsToRemove
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 30
+      Size (m): 0.10000000149011612
+      Style: Points
+      Topic: /kimera_semantics_node/removed_cells
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -382,7 +385,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 13.550129890441895
+      Distance: 14.957609176635742
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -390,17 +393,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 2.449439525604248
-        Y: -2.239184856414795
-        Z: 3.5762786865234375e-06
+        X: -0.16089987754821777
+        Y: -2.7144558429718018
+        Z: 7.152557373046875e-07
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8097969889640808
+      Pitch: 1.5697963237762451
       Target Frame: imu_link_local
-      Yaw: 1.9994407892227173
+      Yaw: 3.109438419342041
     Saved: ~
 Window Geometry:
   Displays:

@@ -56,7 +56,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                                              1, true);
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "tsdf_slice", 1, true);
-  my_pcl_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("my_pcl", 1, true);
+  cell_removal_pcd_pub_ = nh_private_.advertise<sensor_msgs::PointCloud2>("removed_cells", 1, true);
 
   nh_private_.param("pointcloud_queue_size", pointcloud_queue_size_,
                     pointcloud_queue_size_);
@@ -269,8 +269,6 @@ void TsdfServer::processPointCloudMessageAndInsert(
 	filter2.setFilterFieldName("z");
 	filter2.setFilterLimits(-3, 3);
 	filter2.filter(*pointcloud_pcl);
-
-    my_pcl_pub_.publish(*pointcloud_pcl);
 
     convertPointcloud(*pointcloud_pcl, color_map_, &points_C, &colors);
   }
