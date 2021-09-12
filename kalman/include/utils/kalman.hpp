@@ -133,7 +133,7 @@ class KalmanTracker {
       \param Toc Transformation from the sensor frame to the static world frame (odom). We use this to track objects
         in a static world frame. Setting this matrix to identity enables tracking within the sensor frame.
    */
-   void association(std::vector<zeus_msgs::BoundingBox3D> dets, Eigen::Matrix4f robot_pose);
+   void association(const std::vector<zeus_msgs::BoundingBox3D>& dets, Eigen::Matrix4f robot_pose);
 
    /*!
       \brief This method performs the kalman filtering update step, incorporating new measurements.
@@ -172,7 +172,7 @@ class KalmanTracker {
    /*!
       \brief Retrieve the current vector of objects being tracked.
    */
-   std::vector<Object> get_object_list();
+   const std::vector<Object>& get_object_list();
 
    /*!
       \brief This method prints the current list of objects being tracked.
@@ -191,7 +191,7 @@ class KalmanTracker {
       \param ID This is the ID that will be used for this new object track.
       \param current_time Current time in ROS, required for initializing an object track.
    */
-   void add_new(zeus_msgs::BoundingBox3D &det, int ID, double current_time);
+   void add_new(const zeus_msgs::BoundingBox3D &det, int ID, double current_time);
 
    /*!
       \brief Remove the objects that are not contained in the provided ID list.
@@ -283,7 +283,7 @@ class KalmanTracker {
        \pre Before being added to the object list, the detection should be transformed into the desired tracking frame.
        \return The new object that has been created
     */
-    Object create_new(zeus_msgs::BoundingBox3D &det, int &objectID, double current_time);
+    Object create_new(const zeus_msgs::BoundingBox3D &det, int &objectID, double current_time);
 
     /*!
        \brief This method generates a 2D cost matrix to be used in a data association algorithm.
@@ -297,7 +297,7 @@ class KalmanTracker {
        association with an infeasible cost, it should be discarded.
        \return This method returns the generated 2D cost matrix. Size: (object_indices.size(), dets_indices.size())
     */
-    Eigen::MatrixXd generateCostMatrix(std::vector<zeus_msgs::BoundingBox3D> &dets,
+    Eigen::MatrixXd generateCostMatrix(const std::vector<zeus_msgs::BoundingBox3D> &dets,
         std::vector<int> dets_indices, std::vector<int> object_indices, double &infeasible_cost);
 
     /*!
@@ -311,7 +311,7 @@ class KalmanTracker {
        \param current_time This value represents the current time in ROS.
        \pre dets should have been transformed into the same frame as the object list before this.
     */
-    void optimalAssociation(std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int>& indices,
+    void optimalAssociation(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int>& indices,
         std::vector<int>& notassoc, double current_time);
 
     bool boxSizeSimilarToDeer(const Object& obj);

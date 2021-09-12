@@ -2,7 +2,7 @@
 #include "object_tracker/object_tracker_node.h"
 #include <vector>
 
-void convertToRosMessage(std::vector<Object> object_list,
+void convertToRosMessage(const std::vector<Object>& object_list,
 		zeus_msgs::Detections3D &outputDetections, float yaw);
 
 void KalmanTrackerNode::init() {
@@ -132,7 +132,7 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	outputDetections.header.stamp = det.header.stamp;
 	outputDetections.header.frame_id = world_frame_id;
 	outputDetections.bbs.clear();
-	std::vector<Object> object_list = kalmantracker->get_object_list();
+	auto object_list = kalmantracker->get_object_list();
 	// Eigen::Vector3d rpy = T_oc.block<3,3>(0,0).transpose().eulerAngles(0, 1, 2);
 	// zeus_tf::get_rpy_from_odom(*odom, rpy);
 	// convertToRosMessage(object_list, outputDetections, (float)rpy[2]);
@@ -165,7 +165,7 @@ void KalmanTrackerNode::initialize_transforms() {
 }
 
 // Given an object list, formats the appropriate ROS output message for object detection
-void convertToRosMessage(std::vector<Object> object_list,
+void convertToRosMessage(const std::vector<Object>& object_list,
 		zeus_msgs::Detections3D &outputDetections, float yaw) {
 	for (int i = 0; i < (int) object_list.size(); i++) {
 		zeus_msgs::BoundingBox3D detection;

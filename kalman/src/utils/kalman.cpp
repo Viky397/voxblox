@@ -32,7 +32,7 @@ static double dist(Eigen::VectorXd x, Eigen::VectorXd y) {
     return sqrt(pow((x(0, 0) - y(0, 0)), 2) + pow((x(1, 0) - y(1, 0)), 2));
 }
 
-std::vector<Object> KalmanTracker::get_object_list() {
+const std::vector<Object>& KalmanTracker::get_object_list() {
     return X;
 }
 
@@ -62,7 +62,7 @@ static bool is_member(std::vector<int> v, int x) {
     return std::find(v.begin(), v.end(), x) != v.end();
 }
 
-void KalmanTracker::association(std::vector<zeus_msgs::BoundingBox3D> dets, Eigen::Matrix4f robot_pose) {
+void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& dets, Eigen::Matrix4f robot_pose) {
 	for (auto& obj : X) {
 		obj.is_observed = false;
 	}
@@ -71,7 +71,7 @@ void KalmanTracker::association(std::vector<zeus_msgs::BoundingBox3D> dets, Eige
     for (uint j = 0; j < dets.size(); j++) {
         notassoc.push_back(j);
     }
-    transform_dets(dets, Eigen::Matrix4d::Identity());  // Transform dets into odom frame
+    //transform_dets(dets, Eigen::Matrix4d::Identity());  // Transform dets into odom frame
     // Check if detections correspond to one of our existing tracks
     // indices[i] = det_index or (-1)
     if (X.size() > 0)
@@ -270,9 +270,11 @@ void KalmanTracker::prune(Eigen::Matrix4f robot_pose) {
                 if (X[i].confidence < X[j].confidence) {
                     delete_indices.push_back(i);
                     X[j].mergeNewCloud(X[i].cloud);
+                    X[j].is_observed = true;
                 } else {
                     delete_indices.push_back(j);
                     X[i].mergeNewCloud(X[j].cloud);
+                    X[i].is_observed = true;
                 }
             }
 
@@ -384,7 +386,7 @@ void KalmanTracker::prune_2d_overlap(Eigen::Matrix4d Tco, Eigen::MatrixXd CAM) {
     X = Xout;
 }
 
-Object KalmanTracker::create_new(zeus_msgs::BoundingBox3D &det, int &objectID, double current_time) {
+Object KalmanTracker::create_new(const zeus_msgs::BoundingBox3D &det, int &objectID, double current_time) {
     Object x;
     x.x_hat(0, 0) = det.x;
     x.x_hat(1, 0) = det.y;
@@ -426,7 +428,7 @@ bool KalmanTracker::checkIfIDPresent(int ID) {
     }
     return false;
 }
-void KalmanTracker::add_new(zeus_msgs::BoundingBox3D &det, int ID, double current_time) {
+void KalmanTracker::add_new(const zeus_msgs::BoundingBox3D &det, int ID, double current_time) {
     Object obj = create_new(det, ID, current_time);
     X.push_back(obj);
 }
@@ -471,7 +473,7 @@ void KalmanTracker::pruneOld(double current_time) {
     X = Xout;
 }
 
-Eigen::MatrixXd KalmanTracker::generateCostMatrix(std::vector<zeus_msgs::BoundingBox3D> &dets,
+Eigen::MatrixXd KalmanTracker::generateCostMatrix(const std::vector<zeus_msgs::BoundingBox3D> &dets,
                                                   std::vector<int> dets_indices,
                                                   std::vector<int> object_indices,
                                                   double &infeasible_cost) {
@@ -526,7 +528,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrix(std::vector<zeus_msgs::Boundin
    \brief Given a vector of objects and a vector of detections, this method determines the euclidean mean
    (the centroid) of all the objects and points. This is used to prevent numerical rounding errors during association.
 */
-static void get_centroid(std::vector<Object> X, std::vector<zeus_msgs::BoundingBox3D> dets,
+static void get_centroid(const std::vector<Object>& X, const std::vector<zeus_msgs::BoundingBox3D>& dets,
                          std::vector<double> &centroid) {
     centroid = std::vector<double>(3, 0.0);
     for (uint i = 0; i < X.size(); i++) {
@@ -578,7 +580,7 @@ Eigen::Matrix4f KalmanTracker::matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>
 	return final_pose;
 }
 
-void KalmanTracker::optimalAssociation(std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int> &indices,
+void KalmanTracker::optimalAssociation(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int> &indices,
                                        std::vector<int> &notassoc, double current_time) {
     uint N = X.size();
     uint M = dets.size();
