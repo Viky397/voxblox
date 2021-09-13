@@ -44,6 +44,7 @@ typedef int64_t LongIndexElement;
 
 typedef Eigen::Matrix<FloatingPoint, 3, 1> Point;
 typedef Eigen::Matrix<FloatingPoint, 3, 1> Ray;
+typedef std::vector<FloatingPoint> FloatVector;
 
 typedef Eigen::Matrix<IndexElement, 3, 1> AnyIndex;
 typedef AnyIndex VoxelIndex;

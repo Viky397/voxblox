@@ -107,12 +107,18 @@ bool Object::expectedToObserve(Pose2 cam_pose, float fov) {
 	filter.setRadiusSearch(0.25f);
 	filter.filter(*samples);
 
+	if (samples->points.size() == 0) return false;
+
+	float num_pts_expected = 0;
 	for (const auto& p : samples->points) {
 		Pose2 lm(p.x, p.y, 0);
 		Pose2 T_c_l = lm - cam_pose;
-		if (T_c_l.x() > 0.1 && T_c_l.norm() < 3 && fabs(T_c_l.y() / T_c_l.x()) < (fov/2.0/45)) {
-			return true;
+		if (T_c_l.x() > 0.1 && T_c_l.norm() < 3 && fabs(T_c_l.y() / T_c_l.x()) < fabs(fov/2.0/45)) {
+			num_pts_expected++;
 		}
 	}
+
+	if ((num_pts_expected / samples->points.size()) > 0.1) return true;
+
 	return false;
 }

@@ -3,16 +3,24 @@
 #include <vector>
 #include <chrono>
 #include <opencv2/core.hpp>
+#include <pcl/filters/statistical_outlier_removal.h>
 #include "utils/zeus_pcl.hpp"
 
 zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& scan, const Eigen::Matrix4d& T_oc) {
 	zeus_msgs::Detections3D outputDetections;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_scan(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+	sor.setInputCloud(scan);
+	sor.setMeanK(30);
+	sor.setStddevMulThresh(1.0);
+	sor.filter(*filtered_scan);
 
 	sensor_msgs::PointCloud2 gp_prior_msg;
 
     zeus_pcl::PointCloudPtr pc(new zeus_pcl::PointCloud());
     zeus_pcl::PointCloudPtr gp_prior(new zeus_pcl::PointCloud());
-    zeus_pcl::fromPCLRGB(*scan, pc);
+    zeus_pcl::fromPCLRGB(*filtered_scan, pc);
 
     Eigen::Matrix4d C_oc = Eigen::Matrix4d::Identity();
     Eigen::Matrix4d r_oc = Eigen::Matrix4d::Identity();

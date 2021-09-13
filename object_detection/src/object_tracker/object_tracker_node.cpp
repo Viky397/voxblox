@@ -146,10 +146,10 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	sensor_msgs::PointCloud2 sm_msg;
 	pcl::toROSMsg(sm_results[0], sm_msg);
 	sm_msg.header.frame_id = "map";
-	sm_target_pub_.publish(sm_msg);
+	sm_source_pub_.publish(sm_msg);
 	pcl::toROSMsg(sm_results[1], sm_msg);
 	sm_msg.header.frame_id = "map";
-	sm_source_pub_.publish(sm_msg);
+	sm_target_pub_.publish(sm_msg);
 	pcl::toROSMsg(sm_results[2], sm_msg);
 	sm_msg.header.frame_id = "map";
 	sm_refined_pub_.publish(sm_msg);

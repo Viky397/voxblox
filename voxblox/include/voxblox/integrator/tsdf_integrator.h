@@ -57,7 +57,7 @@ class TsdfIntegratorBase {
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    float default_truncation_distance = 0.1;
+    float default_truncation_distance = 0.5;
     float max_weight = 10000.0;
     bool voxel_carving_enabled = true;
     FloatingPoint min_ray_length_m = 0.1;
