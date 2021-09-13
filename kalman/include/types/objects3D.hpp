@@ -51,7 +51,10 @@
 */
 class Object {
  public:
-    ~Object() {}
+	Object() {
+		confidence = a / (a + b);
+	}
+	~Object() {}
     Eigen::MatrixXd x_hat = Eigen::MatrixXd::Zero(5, 1);    /*!< [x, y, z, xdot, ydot] 3D position and 2D velocity */
     Eigen::MatrixXd P_hat = Eigen::MatrixXd::Zero(5, 5);    /*!< Covariance of the state */
     Eigen::MatrixXd y_prev = Eigen::MatrixXd::Zero(3, 1);
