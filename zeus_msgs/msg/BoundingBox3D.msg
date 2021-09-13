@@ -14,4 +14,5 @@ float32[] class_confidences
 int32 ID
 int32 camera
 bool is_observed
+bool is_new
 sensor_msgs/PointCloud2 cloud

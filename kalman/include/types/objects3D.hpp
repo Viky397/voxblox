@@ -64,6 +64,7 @@ class Object {
     HMMPtr hmm;                                             /*!< Pointer to HiddenMarkovModel object */
     int camera = 1;                                         /*!< Which camera was the object observed in. */
     bool is_observed = false;
+    bool is_new = false;
     double last_observed_time;
     double delta_t = 0.1;                                   /*!< current_time - last_observed_time */
     double first_observed_time;

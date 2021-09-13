@@ -96,6 +96,12 @@ class KalmanTrackerNode {
     */
     void initialize_transforms();
 
+    KalmanPtr& getTracker() {
+    	return kalmantracker;
+    }
+
+    void updateObjectConfidence(std::map<int, double> measurements);
+
  private:
     Eigen::Matrix4d Tic2 = Eigen::Matrix4d::Identity();     /*!< Transform from c2 to imu_link */
     zeus_tf::tfBufferPtr tfBuffer;

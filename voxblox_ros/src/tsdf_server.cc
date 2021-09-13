@@ -345,8 +345,9 @@ void TsdfServer::processPointCloudMessageAndInsert(
   }
 
   GlobalIndexVector changed_voxel_ids;
+  FloatVector tsdf_changes;
   ros::WallTime start = ros::WallTime::now();
-  integratePointcloud(T_G_C_refined, points_C, colors, changed_voxel_ids, is_freespace_pointcloud);
+  integratePointcloud(T_G_C_refined, points_C, colors, changed_voxel_ids, tsdf_changes, is_freespace_pointcloud);
   ros::WallTime end = ros::WallTime::now();
   if (verbose_) {
     ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
@@ -412,7 +413,6 @@ void TsdfServer::insertPointcloud(
   while (
       getNextPointcloudFromQueue(&pointcloud_queue_, &pointcloud_msg, &T_G_C)) {
     constexpr bool is_freespace_pointcloud = false;
-    std::cout << "Got new pointcloud" << std::endl;
     processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
                                       is_freespace_pointcloud);
     processed_any = true;
@@ -452,14 +452,16 @@ void TsdfServer::insertFreespacePointcloud(
   }
 }
 
-void TsdfServer::integratePointcloud(const Transformation& T_G_C,
+float TsdfServer::integratePointcloud(const Transformation& T_G_C,
                                      const Pointcloud& ptcloud_C,
                                      const Colors& colors,
 									 GlobalIndexVector& changed_ids,
+									 FloatVector& tsdf_changes,
                                      const bool is_freespace_pointcloud) {
   CHECK_EQ(ptcloud_C.size(), colors.size());
-  tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors, changed_ids,
-                                        is_freespace_pointcloud);
+  float ret = tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors, changed_ids,
+                                        tsdf_changes, is_freespace_pointcloud);
+  return ret;
 }
 
 void TsdfServer::publishAllUpdatedTsdfVoxels() {

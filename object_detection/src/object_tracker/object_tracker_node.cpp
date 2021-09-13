@@ -164,6 +164,20 @@ void KalmanTrackerNode::initialize_transforms() {
 	//ROS_INFO_STREAM("[OBJ] object_tracker transforms initialized");
 }
 
+void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurements) {
+	auto& objects = kalmantracker->get_mutable_object_list();
+	std::map<int, size_t> id_idx_lut;
+	for (size_t idx(0); idx<objects.size(); idx++) {
+		id_idx_lut[objects[idx].ID] = idx;
+	}
+	for (const auto& pair : measurements) {
+		if (id_idx_lut.count(pair.first) == 0) {
+			throw std::runtime_error("ERROR: Object index not found!");
+		}
+		objects.at(id_idx_lut.at(pair.first)).updateProbability(pair.second, 0.1);
+	}
+}
+
 // Given an object list, formats the appropriate ROS output message for object detection
 void convertToRosMessage(const std::vector<Object>& object_list,
 		zeus_msgs::Detections3D &outputDetections, float yaw) {
@@ -183,6 +197,7 @@ void convertToRosMessage(const std::vector<Object>& object_list,
 		detection.camera = object_list[i].camera;
 		detection.confidence = object_list[i].confidence;
 		detection.is_observed = object_list[i].is_observed;
+		detection.is_new = object_list[i].is_new;
 
 		sensor_msgs::PointCloud2 cloud_msg;
 		pcl::toROSMsg(*object_list[i].cloud, cloud_msg);

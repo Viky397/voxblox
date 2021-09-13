@@ -174,6 +174,8 @@ class KalmanTracker {
    */
    const std::vector<Object>& get_object_list();
 
+   std::vector<Object>& get_mutable_object_list();
+
    /*!
       \brief This method prints the current list of objects being tracked.
    */

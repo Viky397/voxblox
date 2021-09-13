@@ -146,6 +146,70 @@ void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
   temp_block_map_.clear();
 }
 
+std::pair<float, float> TsdfIntegratorBase::calculateNewWeightAndDistance(
+												 const Point& origin,
+		                                         const Point& point_G,
+		                                         const GlobalIndex& global_voxel_idx,
+		                                         const Color& color, const float weight,
+		                                         TsdfVoxel* tsdf_voxel) {
+
+	  const Point voxel_center =
+	      getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+
+	  const float sdf = computeDistance(origin, point_G, voxel_center);
+
+	  float updated_weight = weight;
+	  // Compute updated weight in case we use weight dropoff. It's easier here
+	  // than in getVoxelWeight as here we have the actual SDF for the voxel
+	  // already computed.
+	  const FloatingPoint dropoff_epsilon = voxel_size_;
+	  if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
+	    updated_weight = weight * (config_.default_truncation_distance + sdf) /
+	                     (config_.default_truncation_distance - dropoff_epsilon);
+	    updated_weight = std::max(updated_weight, 0.0f);
+	  }
+
+	  // Compute the updated weight in case we compensate for sparsity. By
+	  // multiplicating the weight of occupied areas (|sdf| < truncation distance)
+	  // by a factor, we prevent to easily fade out these areas with the free
+	  // space parts of other rays which pass through the corresponding voxels.
+	  // This can be useful for creating a TSDF map from sparse sensor data (e.g.
+	  // visual features from a SLAM system). By default, this option is disabled.
+	  if (config_.use_sparsity_compensation_factor) {
+	    if (std::abs(sdf) < config_.default_truncation_distance) {
+	      updated_weight *= config_.sparsity_compensation_factor;
+	    }
+	  }
+
+	  // Lookup the mutex that is responsible for this voxel and lock it
+	  std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
+
+	  const float new_weight = tsdf_voxel->weight + updated_weight;
+
+	  // it is possible to have weights very close to zero, due to the limited
+	  // precision of floating points dividing by this small value can cause nans
+	  if (new_weight < kFloatEpsilon) {
+	    return std::pair<float, float>{tsdf_voxel->weight, tsdf_voxel->distance};
+	  }
+
+	  const float new_sdf =
+	      (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
+	      new_weight;
+
+	  // color blending is expensive only do it close to the surface
+	  if (std::abs(sdf) < config_.default_truncation_distance) {
+	    tsdf_voxel->color = Color::blendTwoColors(
+	        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
+	  }
+
+	  float result_weight = std::min(config_.max_weight, new_weight);
+	  float result_distance = (new_sdf > 0.0) ?
+			  std::min(config_.default_truncation_distance, new_sdf) :
+              std::max(-config_.default_truncation_distance, new_sdf);
+
+	  return std::pair<float, float>{result_weight, result_distance};
+}
+
 // Updates tsdf_voxel. Thread safe.
 void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
                                          const Point& point_G,
@@ -154,58 +218,11 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
                                          TsdfVoxel* tsdf_voxel) {
   DCHECK(tsdf_voxel != nullptr);
 
-  const Point voxel_center =
-      getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+  auto pair = calculateNewWeightAndDistance(
+		  origin, point_G, global_voxel_idx, color, weight, tsdf_voxel);
 
-  const float sdf = computeDistance(origin, point_G, voxel_center);
-
-  float updated_weight = weight;
-  // Compute updated weight in case we use weight dropoff. It's easier here
-  // than in getVoxelWeight as here we have the actual SDF for the voxel
-  // already computed.
-  const FloatingPoint dropoff_epsilon = voxel_size_;
-  if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
-    updated_weight = weight * (config_.default_truncation_distance + sdf) /
-                     (config_.default_truncation_distance - dropoff_epsilon);
-    updated_weight = std::max(updated_weight, 0.0f);
-  }
-
-  // Compute the updated weight in case we compensate for sparsity. By
-  // multiplicating the weight of occupied areas (|sdf| < truncation distance)
-  // by a factor, we prevent to easily fade out these areas with the free
-  // space parts of other rays which pass through the corresponding voxels.
-  // This can be useful for creating a TSDF map from sparse sensor data (e.g.
-  // visual features from a SLAM system). By default, this option is disabled.
-  if (config_.use_sparsity_compensation_factor) {
-    if (std::abs(sdf) < config_.default_truncation_distance) {
-      updated_weight *= config_.sparsity_compensation_factor;
-    }
-  }
-
-  // Lookup the mutex that is responsible for this voxel and lock it
-  std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
-
-  const float new_weight = tsdf_voxel->weight + updated_weight;
-
-  // it is possible to have weights very close to zero, due to the limited
-  // precision of floating points dividing by this small value can cause nans
-  if (new_weight < kFloatEpsilon) {
-    return;
-  }
-
-  const float new_sdf =
-      (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
-      new_weight;
-
-  // color blending is expensive only do it close to the surface
-  if (std::abs(sdf) < config_.default_truncation_distance) {
-    tsdf_voxel->color = Color::blendTwoColors(
-        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
-  }
-  tsdf_voxel->distance =
-      (new_sdf > 0.0) ? std::min(config_.default_truncation_distance, new_sdf)
-                      : std::max(-config_.default_truncation_distance, new_sdf);
-  tsdf_voxel->weight = std::min(config_.max_weight, new_weight);
+  tsdf_voxel->weight = pair.first;
+  tsdf_voxel->distance = pair.second;
 }
 
 // Thread safe.
@@ -240,10 +257,11 @@ float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
   return 0.0f;
 }
 
-void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
+float SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
 											   GlobalIndexVector& changed_ids,
+											   FloatVector& tsdf_changes,
                                                const bool freespace_points
 											   ) {
   timing::Timer integrate_timer("integrate/simple");
@@ -253,10 +271,13 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
       ThreadSafeIndexFactory::get(config_.integration_order_mode, points_C));
 
   std::vector<GlobalIndexVector > changed_ids_threads(config_.integrator_threads);
+  std::vector<FloatVector > tsdf_changes_threads(config_.integrator_threads);
   std::list<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
     integration_threads.emplace_back(&SimpleTsdfIntegrator::integrateFunction,
-                                     this, T_G_C, points_C, colors, std::ref(changed_ids_threads.at(i)),
+                                     this, T_G_C, points_C, colors,
+									 std::ref(changed_ids_threads.at(i)),
+									 std::ref(tsdf_changes_threads.at(i)),
                                      freespace_points, index_getter.get());
   }
 
@@ -268,12 +289,15 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   timing::Timer insertion_timer("inserting_missed_blocks");
   updateLayerWithStoredBlocks();
   insertion_timer.Stop();
+
+  return 0;
 }
 
 void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                                              const Pointcloud& points_C,
                                              const Colors& colors,
 											 GlobalIndexVector& changed_ids_thread,
+											 FloatVector& tsdf_changes_thread,
 											 const bool freespace_points,
 											 ThreadSafeIndex* index_getter) {
   DCHECK(index_getter != nullptr);
@@ -309,10 +333,11 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
   }
 }
 
-void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
+float MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
 											   GlobalIndexVector& changed_ids,
+											   FloatVector& tsdf_changes,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate/merged");
   CHECK_EQ(points_C.size(), colors.size());
@@ -341,6 +366,8 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   clear_timer.Stop();
 
   integrate_timer.Stop();
+
+  return 0;
 }
 
 void MergedTsdfIntegrator::bundleRays(
@@ -495,6 +522,7 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                                            const Pointcloud& points_C,
                                            const Colors& colors,
 										   GlobalIndexVector& changed_ids_thread,
+										   FloatVector& tsdf_changes_thread,
                                            const bool freespace_points,
                                            ThreadSafeIndex* index_getter) {
   DCHECK(index_getter != nullptr);
@@ -563,10 +591,11 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
   }
 }
 
-void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
+float FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const Pointcloud& points_C,
                                              const Colors& colors,
 											 GlobalIndexVector& changed_ids,
+											 FloatVector& tsdf_changes,
                                              const bool freespace_points) {
   timing::Timer integrate_timer("integrate/fast");
   CHECK_EQ(points_C.size(), colors.size());
@@ -584,11 +613,14 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
       ThreadSafeIndexFactory::get(config_.integration_order_mode, points_C));
 
   std::vector<GlobalIndexVector > changed_ids_threads(config_.integrator_threads);
+  std::vector<FloatVector > tsdf_changes_threads(config_.integrator_threads);
   std::list<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
     integration_threads.emplace_back(&FastTsdfIntegrator::integrateFunction,
-                                     this, T_G_C, points_C, colors, std::ref(changed_ids_threads.at(i)),
-                                     freespace_points, index_getter.get());
+                                     this, T_G_C, points_C, colors,
+									 std::ref(changed_ids_threads.at(i)),
+									 std::ref(tsdf_changes_threads.at(i)),
+									 freespace_points, index_getter.get());
   }
 
   for (std::thread& thread : integration_threads) {
@@ -600,6 +632,8 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   timing::Timer insertion_timer("inserting_missed_blocks");
   updateLayerWithStoredBlocks();
   insertion_timer.Stop();
+
+  return 0;
 }
 
 std::string TsdfIntegratorBase::Config::print() const {

@@ -36,6 +36,10 @@ const std::vector<Object>& KalmanTracker::get_object_list() {
     return X;
 }
 
+std::vector<Object>& KalmanTracker::get_mutable_object_list() {
+    return X;
+}
+
 void KalmanTracker::print() {
     for (uint i = 0; i < X.size(); i++) {
         std::cout << X[i] << std::endl;
@@ -65,6 +69,7 @@ static bool is_member(std::vector<int> v, int x) {
 void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& dets, Eigen::Matrix4f robot_pose) {
 	for (auto& obj : X) {
 		obj.is_observed = false;
+		obj.is_new = false;
 	}
     indices = std::vector<int>(X.size(), -1);
     std::vector<int> notassoc;
@@ -414,6 +419,7 @@ Object KalmanTracker::create_new(const zeus_msgs::BoundingBox3D &det, int &objec
     x.P_hat = P0;
     x.camera = det.camera;
     x.is_observed = true;
+    x.is_new = true;
     x.last_observed_time = current_time;
     x.first_observed_time = current_time;
     x.last_updated = current_time;

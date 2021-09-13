@@ -98,10 +98,11 @@ class TsdfIntegratorBase {
    * truncation distance. Used when we are given a minimum distance to a point,
    * rather then exact distance. This is useful for clearing out free space.
    */
-  virtual void integratePointCloud(const Transformation& T_G_C,
+  virtual float integratePointCloud(const Transformation& T_G_C,
                                    const Pointcloud& points_C,
                                    const Colors& colors,
 								   GlobalIndexVector& changed_ids,
+								   FloatVector& tsdf_changes,
                                    const bool freespace_points = false) = 0;
 
   /// Returns a CONST ref of the config.
@@ -160,6 +161,15 @@ class TsdfIntegratorBase {
    * allocateStorageAndGetVoxelPtr for more details.
    */
   void updateLayerWithStoredBlocks();
+
+
+
+  std::pair<float, float> calculateNewWeightAndDistance(
+		  	  	  	  	  	  	const Point& origin,
+  		                        const Point& point_G,
+  		                        const GlobalIndex& global_voxel_idx,
+  		                        const Color& color, const float weight,
+  		                        TsdfVoxel* tsdf_voxel);
 
   /// Updates tsdf_voxel, Thread safe.
   void updateTsdfVoxel(const Point& origin, const Point& point_G,
@@ -231,14 +241,16 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
   SimpleTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
-  void integratePointCloud(const Transformation& T_G_C,
+  float integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
 						   GlobalIndexVector& changed_ids,
+						   FloatVector& tsdf_changes,
                            const bool freespace_points = false);
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
 						 GlobalIndexVector& changed_ids_thread,
+						 FloatVector& tsdf_changes_thread,
                          const bool freespace_points,
                          ThreadSafeIndex* index_getter);
 };
@@ -255,9 +267,10 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
   MergedTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
-  void integratePointCloud(const Transformation& T_G_C,
+  float integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
 						   GlobalIndexVector& changed_ids,
+						   FloatVector& tsdf_changes,
                            const bool freespace_points = false);
 
  protected:
@@ -311,12 +324,14 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
 						 GlobalIndexVector& changed_ids_thread,
+						 FloatVector& tsdf_changes_thread,
                          const bool freespace_points,
                          ThreadSafeIndex* index_getter);
 
-  void integratePointCloud(const Transformation& T_G_C,
+  float integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
 						   GlobalIndexVector& changed_ids,
+						   FloatVector& tsdf_changes,
                            const bool freespace_points = false);
 
  private:
