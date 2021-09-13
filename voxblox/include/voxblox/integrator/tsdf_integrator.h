@@ -164,12 +164,12 @@ class TsdfIntegratorBase {
 
 
 
-  std::pair<float, float> calculateNewWeightAndDistance(
+  std::tuple<float, float, float> calculateNewWeightAndDistance(
 		  	  	  	  	  	  	const Point& origin,
   		                        const Point& point_G,
   		                        const GlobalIndex& global_voxel_idx,
-  		                        const Color& color, const float weight,
-  		                        TsdfVoxel* tsdf_voxel);
+  		                        const float weight,
+  		                        const TsdfVoxel* tsdf_voxel) const;
 
   /// Updates tsdf_voxel, Thread safe.
   void updateTsdfVoxel(const Point& origin, const Point& point_G,

@@ -146,12 +146,12 @@ void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
   temp_block_map_.clear();
 }
 
-std::pair<float, float> TsdfIntegratorBase::calculateNewWeightAndDistance(
+std::tuple<float, float, float> TsdfIntegratorBase::calculateNewWeightAndDistance (
 												 const Point& origin,
 		                                         const Point& point_G,
 		                                         const GlobalIndex& global_voxel_idx,
-		                                         const Color& color, const float weight,
-		                                         TsdfVoxel* tsdf_voxel) {
+		                                         const float weight,
+		                                         const TsdfVoxel* tsdf_voxel) const {
 
 	  const Point voxel_center =
 	      getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
@@ -181,33 +181,24 @@ std::pair<float, float> TsdfIntegratorBase::calculateNewWeightAndDistance(
 	    }
 	  }
 
-	  // Lookup the mutex that is responsible for this voxel and lock it
-	  std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
-
 	  const float new_weight = tsdf_voxel->weight + updated_weight;
 
 	  // it is possible to have weights very close to zero, due to the limited
 	  // precision of floating points dividing by this small value can cause nans
 	  if (new_weight < kFloatEpsilon) {
-	    return std::pair<float, float>{tsdf_voxel->weight, tsdf_voxel->distance};
+	    return std::tuple<float, float, float>{tsdf_voxel->weight, tsdf_voxel->distance, updated_weight};
 	  }
 
 	  const float new_sdf =
 	      (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
 	      new_weight;
 
-	  // color blending is expensive only do it close to the surface
-	  if (std::abs(sdf) < config_.default_truncation_distance) {
-	    tsdf_voxel->color = Color::blendTwoColors(
-	        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
-	  }
-
 	  float result_weight = std::min(config_.max_weight, new_weight);
 	  float result_distance = (new_sdf > 0.0) ?
 			  std::min(config_.default_truncation_distance, new_sdf) :
               std::max(-config_.default_truncation_distance, new_sdf);
 
-	  return std::pair<float, float>{result_weight, result_distance};
+	  return std::tuple<float, float, float>{result_weight, result_distance, updated_weight};
 }
 
 // Updates tsdf_voxel. Thread safe.
@@ -218,11 +209,19 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
                                          TsdfVoxel* tsdf_voxel) {
   DCHECK(tsdf_voxel != nullptr);
 
-  auto pair = calculateNewWeightAndDistance(
-		  origin, point_G, global_voxel_idx, color, weight, tsdf_voxel);
+  auto [new_weight, new_distance, updated_weight] = calculateNewWeightAndDistance(
+		  origin, point_G, global_voxel_idx, weight, tsdf_voxel);
 
-  tsdf_voxel->weight = pair.first;
-  tsdf_voxel->distance = pair.second;
+  // Lookup the mutex that is responsible for this voxel and lock it
+  std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
+
+  if (fabs(new_distance) < config_.default_truncation_distance) {
+  	    tsdf_voxel->color = Color::blendTwoColors(
+  	        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
+  }
+
+  tsdf_voxel->weight = new_weight;
+  tsdf_voxel->distance = new_distance;
 }
 
 // Thread safe.
