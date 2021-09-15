@@ -316,12 +316,8 @@ class KalmanTracker {
     void optimalAssociation(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int>& indices,
         std::vector<int>& notassoc, double current_time);
 
-    bool boxSizeSimilarToDeer(const Object& obj);
-    bool boxSizeSimilarToDeer(const zeus_msgs::BoundingBox3D& obj);
     bool boxSizeSimilarToPed(const Object& obj);
     bool boxSizeSimilarToPed(const zeus_msgs::BoundingBox3D& obj);
-    bool boxSizeSimilarToBarrel(const Object& obj);
-    bool boxSizeSimilarToBarrel(const zeus_msgs::BoundingBox3D& obj);
 
     Eigen::Matrix4f matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target, int max_iter=10);
 

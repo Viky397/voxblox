@@ -76,7 +76,6 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
     for (uint j = 0; j < dets.size(); j++) {
         notassoc.push_back(j);
     }
-    //transform_dets(dets, Eigen::Matrix4d::Identity());  // Transform dets into odom frame
     // Check if detections correspond to one of our existing tracks
     // indices[i] = det_index or (-1)
     if (X.size() > 0)
@@ -88,21 +87,13 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
         indices.push_back(notassoc[j]);
     }
     // Check if objects can be deleted
-    // TODO(keenan): move some of this into prune()
     bool classify_barrel = true;
-    std::vector<int> delete_indices;
+
     for (uint i = 0; i < X.size(); i++) {
         if (indices[i] >= 0) {
             if (is_object_tracker) {
                 std::vector<float> confidences(1, dets[indices[i]].confidence);
                 X[i].push_type(unknown_type, confidences);
-            } else {
-                if (dets[indices[i]].class_confidences.size() > 0) {
-                    X[i].push_type(dets[indices[i]].type, dets[indices[i]].class_confidences);
-                } else {
-                    std::vector<float> confidences(1, dets[indices[i]].confidence);
-                    X[i].push_type(dets[indices[i]].type, confidences);
-                }
             }
 
             X[i].camera = dets[indices[i]].camera;
@@ -113,21 +104,8 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
             X[i].delta_t = current_time - X[i].last_observed_time;
             X[i].last_observed_time = current_time;
             X[i].is_observed = true;
-        } else if ((X[i].type == unknown_type || X[i].type == unknown_dynamic_type)
-                && X[i].getLostTime(current_time) > delete_time_unknown) {
-            delete_indices.push_back(i);
         }
     }
-    std::vector<Object> Xout;
-    std::vector<int> indicesOut;
-    for (uint i = 0; i < X.size(); i++) {
-        if (!is_member(delete_indices, i)) {
-            Xout.push_back(X[i]);
-            indicesOut.push_back(indices[i]);
-        }
-    }
-    X = Xout;
-    indices = indicesOut;
 }
 
 std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::Matrix4f robot_pose) {
@@ -677,40 +655,6 @@ void KalmanTracker::optimalAssociation(const std::vector<zeus_msgs::BoundingBox3
     }
 }
 
-bool KalmanTracker::boxSizeSimilarToDeer(const Object &obj) {
-    bool inRangeLen = false;
-    bool inRangeWid = false;
-    bool inRangeHt = false;
-
-    if ((obj.l >= deer_L[0] && obj.l <= deer_L[1]) || (obj.l >= deer_W[0] && obj.l <= deer_W[1])) {
-        inRangeLen = true;
-    }
-    if ((obj.w >= deer_W[0] && obj.w <= deer_W[1]) || (obj.w >= deer_L[0] && obj.w <= deer_L[1])) {
-        inRangeWid = true;
-    }
-    if (obj.h >= deer_H[0] && obj.h <= deer_H[1]) {
-        inRangeHt = true;
-    }
-    return (inRangeLen && inRangeWid && inRangeHt);
-}
-
-bool KalmanTracker::boxSizeSimilarToDeer(const zeus_msgs::BoundingBox3D &obj) {
-    bool inRangeLen = false;
-    bool inRangeWid = false;
-    bool inRangeHt = false;
-
-    if ((obj.l >= deer_L[0] && obj.l <= deer_L[1]) || (obj.l >= deer_W[0] && obj.l <= deer_W[1])) {
-        inRangeLen = true;
-    }
-    if ((obj.w >= deer_W[0] && obj.w <= deer_W[1]) || (obj.w >= deer_L[0] && obj.w <= deer_L[1])) {
-        inRangeWid = true;
-    }
-    if (obj.h >= deer_H[0] && obj.h <= deer_H[1]) {
-        inRangeHt = true;
-    }
-    return (inRangeLen && inRangeWid && inRangeHt);
-}
-
 bool KalmanTracker::boxSizeSimilarToPed(const Object &obj) {
     bool inRangeLen = false;
     bool inRangeWid = false;
@@ -745,37 +689,4 @@ bool KalmanTracker::boxSizeSimilarToPed(const zeus_msgs::BoundingBox3D &obj) {
     return (inRangeLen && inRangeWid && inRangeHt);
 }
 
-bool KalmanTracker::boxSizeSimilarToBarrel(const Object &obj) {
-    bool inRangeLen = false;
-    bool inRangeWid = false;
-    bool inRangeHt = false;
-
-    if (obj.l >= barrel_L[0] && obj.l <= barrel_L[1]) {
-        inRangeLen = true;
-    }
-    if (obj.w >= barrel_W[0] && obj.w <= barrel_W[1]) {
-        inRangeWid = true;
-    }
-    if (obj.h >= barrel_H[0] && obj.h <= barrel_H[1]) {
-        inRangeHt = true;
-    }
-    return (inRangeLen && inRangeWid && inRangeHt);
-}
-
-bool KalmanTracker::boxSizeSimilarToBarrel(const zeus_msgs::BoundingBox3D &obj) {
-    bool inRangeLen = false;
-    bool inRangeWid = false;
-    bool inRangeHt = false;
-
-    if (obj.l >= barrel_L[0] && obj.l <= barrel_L[1]) {
-        inRangeLen = true;
-    }
-    if (obj.w >= barrel_W[0] && obj.w <= barrel_W[1]) {
-        inRangeWid = true;
-    }
-    if (obj.h >= barrel_H[0] && obj.h <= barrel_H[1]) {
-        inRangeHt = true;
-    }
-    return (inRangeLen && inRangeWid && inRangeHt);
-}
 }  // namespace kalman

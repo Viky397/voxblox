@@ -117,7 +117,6 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	std::cout << "Raw det received " << det.bbs.size() << std::endl;
 	auto start = std::chrono::high_resolution_clock::now();
 	std::vector<zeus_msgs::BoundingBox3D> dets = det.bbs;
-	Eigen::Matrix4d I = Eigen::Matrix4d::Identity();
 	//zeus_tf::get_odom_tf(*odom, Toi);
 	//Eigen::Matrix4d Toc = Toi * Tic2;
 	kalmantracker->setCurrentTime(det.header.stamp.toSec());
