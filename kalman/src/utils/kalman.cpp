@@ -212,9 +212,10 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
             sources += *cloud_pcl;
             targets += *X[i].cloud;
 
-            auto sc_tf = matchPCDs(cloud_pcl, X[i]);
+            // auto sc_tf = matchPCDs(cloud_pcl, X[i]);
+            auto sc_tf = Eigen::Matrix4f::Identity();
 
-            std::cout << "[JQ] Scan match result: " << sc_tf << std::endl;
+            // std::cout << "[JQ] Scan match result: " << sc_tf << std::endl;
 
             pcl::transformPointCloud(*cloud_pcl, *pcd_refine, sc_tf);
 
@@ -222,8 +223,8 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
 
             auto bbox = X[i].mergeNewCloud(cloud_pcl);
 
-            float dist_change = norm(sc_tf);
-            X[i].updateProbability(dist_change, 0.1);
+            //float dist_change = norm(sc_tf);
+            //X[i].updateProbability(dist_change, 0.1);
 
             X[i].x_hat(0,0) = bbox[0];
             X[i].x_hat(1,0) = bbox[1];

@@ -69,15 +69,18 @@ std::vector<double> Object::mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr
 void Object::updateProbability(double change, double std_change) {
 	std::cout << "[JQ] Object " << ID << " amount of change " << change << std::endl;
 
+	double eps = 1e-5;
+	double tolerance = 1.0;
+
 	double s_sq = 1.0 / (1.0 / (pow(sig, 2)) + 1.0 / (pow(std_change, 2)));
 	double m = s_sq * (mu / (pow(sig, 2)) + change / (pow(std_change, 2)));
 
 	boost::math::normal_distribution<double> norm_dist(mu, sig);
-	boost::math::uniform_distribution<double> uniform_dist(0.0, 2.0);
+	boost::math::uniform_distribution<double> uniform_dist(0.0, tolerance);
 
 	// double C1 = (a / (a + b)) * boost::math::pdf(norm_dist, change);
-	double C1 = (a / (a + b)) * std::max(boost::math::pdf(norm_dist, change), 0.0001);
-	double C2 = change >= 1.999 ? 1000 : (b / (a + b)) * boost::math::pdf(uniform_dist, change);
+	double C1 = (a / (a + b)) * std::max(boost::math::pdf(norm_dist, change), eps);
+	double C2 = change >= tolerance-eps ? 1000 : (b / (a + b)) * boost::math::pdf(uniform_dist, change);
 
 	double C_norm = C1 + C2;
 	C1 /= C_norm;

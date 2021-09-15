@@ -9,8 +9,8 @@ Panels:
         - /TF1/Frames1
         - /TF1/Tree1
         - /Image1
-      Splitter Ratio: 0.628025472164154
-    Tree Height: 954
+      Splitter Ratio: 0.6891719698905945
+    Tree Height: 600
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -60,14 +60,20 @@ Visualization Manager:
       Frame Timeout: 1000
       Frames:
         All Enabled: false
+        base_footprint:
+          Value: false
         base_link:
           Value: true
         chassis_link:
-          Value: false
+          Value: true
         front_laser:
           Value: true
+        front_line_sensor:
+          Value: false
         imu_link:
           Value: true
+        internal_link:
+          Value: false
         laser_odom:
           Value: false
         lift_link:
@@ -75,19 +81,59 @@ Visualization Manager:
         localization_frame:
           Value: false
         map:
-          Value: false
+          Value: true
         my_frame:
           Value: false
         odom:
           Value: true
+        realsense_front_camera_aligned_depth_to_color_frame:
+          Value: false
+        realsense_front_camera_aligned_depth_to_infra1_frame:
+          Value: false
+        realsense_front_camera_color_frame:
+          Value: false
         realsense_front_camera_color_optical_frame:
+          Value: false
+        realsense_front_camera_depth_frame:
+          Value: false
+        realsense_front_camera_depth_optical_frame:
+          Value: false
+        realsense_front_camera_infra1_frame:
+          Value: false
+        realsense_front_camera_infra1_optical_frame:
+          Value: false
+        realsense_front_camera_infra2_frame:
+          Value: false
+        realsense_front_camera_infra2_optical_frame:
+          Value: false
+        realsense_front_camera_link:
           Value: true
+        realsense_front_camera_mount_link:
+          Value: false
+        rear_left_sonar_link:
+          Value: false
+        rear_realsense_link:
+          Value: false
+        rear_right_sonar_link:
+          Value: false
+        rear_sensor:
+          Value: false
+        rotacastor_left_link:
+          Value: false
+        rotacastor_right_link:
+          Value: false
+        stereo:
+          Value: false
+        stereo_left:
+          Value: false
+        stereo_right:
+          Value: false
         wheel_left_link:
           Value: false
         wheel_right_link:
           Value: false
         world:
-          Value: true
+          Value: false
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -103,7 +149,24 @@ Visualization Manager:
               {}
             odom:
               base_link:
+                base_footprint:
+                  {}
+                chassis_link:
+                  internal_link:
+                    {}
+                  lift_link:
+                    {}
+                  rotacastor_left_link:
+                    {}
+                  rotacastor_right_link:
+                    {}
+                  wheel_left_link:
+                    {}
+                  wheel_right_link:
+                    {}
                 front_laser:
+                  {}
+                front_line_sensor:
                   {}
                 imu_link:
                   {}
@@ -111,6 +174,36 @@ Visualization Manager:
                   {}
                 realsense_front_camera_color_optical_frame:
                   {}
+                realsense_front_camera_mount_link:
+                  realsense_front_camera_link:
+                    realsense_front_camera_aligned_depth_to_color_frame:
+                      {}
+                    realsense_front_camera_aligned_depth_to_infra1_frame:
+                      realsense_front_camera_infra1_optical_frame:
+                        {}
+                    realsense_front_camera_color_frame:
+                      {}
+                    realsense_front_camera_depth_frame:
+                      realsense_front_camera_depth_optical_frame:
+                        {}
+                    realsense_front_camera_infra1_frame:
+                      {}
+                    realsense_front_camera_infra2_frame:
+                      realsense_front_camera_infra2_optical_frame:
+                        {}
+                rear_left_sonar_link:
+                  {}
+                rear_realsense_link:
+                  {}
+                rear_right_sonar_link:
+                  {}
+                rear_sensor:
+                  {}
+                stereo:
+                  stereo_left:
+                    {}
+                  stereo_right:
+                    {}
       Update Interval: 0
       Value: true
     - Class: rviz/MarkerArray
@@ -384,7 +477,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 14.957609176635742
+      Distance: 11.385491371154785
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -392,27 +485,27 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.16089987754821777
-        Y: -2.7144558429718018
-        Z: 7.152557373046875e-07
+        X: 3.423408031463623
+        Y: -1.2138872146606445
+        Z: -7.152557373046875e-07
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7147971391677856
+      Pitch: 1.0997968912124634
       Target Frame: imu_link_local
-      Yaw: 3.1394388675689697
+      Yaw: 2.339444637298584
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 2338
+  Height: 1735
   Hide Left Dock: false
   Hide Right Dock: true
   Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000003130000081afc020000000cfb0000001200530065006c0065006300740069006f006e00000001e10000009b000000b000fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000b0fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000006e000004b20000018200fffffffb0000000a0049006d006100670065010000052c000003090000002600fffffffb0000000a0049006d0061006700650100000841000000470000002600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d00610067006501000006f70000032f0000000000000000fb0000000a0049006d0061006700650100000776000002b0000000000000000000000001000001aa0000038afc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002e0000038a0000013200fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000780000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000112000000060fc0100000002fb0000000800540069006d00650100000000000011200000057100fffffffb0000000800540069006d0065010000000000000450000000000000000000000e010000081a00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd000000040000000000000313000005bffc020000000cfb0000001200530065006c0065006300740069006f006e00000001e10000009b000000b000fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000b0fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000006e000003500000018200fffffffb0000000a0049006d00610067006501000003ca000002250000002600fffffffb0000000a0049006d00610067006501000005fb000000320000002600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d00610067006501000006f70000032f0000000000000000fb0000000a0049006d0061006700650100000776000002b0000000000000000000000001000001aa0000038afc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002e0000038a0000013200fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000780000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000cd800000060fc0100000002fb0000000800540069006d0065010000000000000cd80000057100fffffffb0000000800540069006d00650100000000000004500000000000000000000009b9000005bf00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -421,6 +514,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 4384
-  X: 0
-  Y: 54
+  Width: 3288
+  X: 247
+  Y: 492
