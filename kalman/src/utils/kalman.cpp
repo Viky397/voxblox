@@ -458,6 +458,59 @@ void KalmanTracker::pruneOld(double current_time) {
     X = Xout;
 }
 
+Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs::BoundingBox3D> &dets,
+                                                  std::vector<int> dets_indices,
+                                                  std::vector<int> object_indices,
+                                                  double &infeasible_cost) {
+    uint N = object_indices.size();
+    uint M = dets_indices.size();
+    Eigen::MatrixXd costMatrix = Eigen::MatrixXd::Zero(N, M);
+    if (N == 0 || M == 0)
+        return costMatrix;
+
+    double EPS = 1e-15;
+    double INF = std::numeric_limits<double>::infinity();
+    infeasible_cost = INF;
+    double max_value = 0;
+    for (uint i = 0; i < N; i++) {
+    	Eigen::Vector3d x = A * X[object_indices[i]].x_hat;
+        for (uint j = 0; j < M; j++) {
+        	double d_euclid = dist(x, dets[dets_indices[j]]);
+        	if (d_euclid > 10*metricGate) {
+        		costMatrix(i, j) = INF;
+        		continue;
+        	}
+
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl(new pcl::PointCloud<pcl::PointXYZRGB>());
+            pcl::fromROSMsg(dets[dets_indices[j]].cloud, *cloud_pcl);
+
+            auto sc_tf = matchPCDs(cloud_pcl, X[i]);
+            double d_sm = norm(sc_tf);
+
+            if (d_sm > metricGate || d_sm < EPS) {
+                costMatrix(i, j) = INF;
+                continue;
+            }
+
+            costMatrix(i, j) = d_sm / metricGate;
+            if (costMatrix(i, j) > max_value && costMatrix(i, j) != INF)
+                max_value = costMatrix(i, j);
+        }
+    }
+    if (max_value > 0) {
+        // Replace INF with maximum non-infinite cost in costMatrix:
+        for (uint i = 0; i < costMatrix.rows(); i++) {
+            for (uint j = 0; j < costMatrix.cols(); j++) {
+                if (costMatrix(i, j) == INF) {
+                    costMatrix(i, j) = max_value + 1;
+                    infeasible_cost = max_value + 1;
+                }
+            }
+        }
+    }
+    return costMatrix;
+}
+
 Eigen::MatrixXd KalmanTracker::generateCostMatrix(const std::vector<zeus_msgs::BoundingBox3D> &dets,
                                                   std::vector<int> dets_indices,
                                                   std::vector<int> object_indices,
@@ -554,14 +607,14 @@ Eigen::Matrix4f KalmanTracker::matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>
 	// set ICP iterations
 	matcher.setMaxIter(max_iter);
 	// set ourlier rejection
-	matcher.setOutlierRejectionDist(0.2);
+	matcher.setOutlierRejectionDist(0.4);
 	// set input point cloud
 	matcher.setSourcePointCloud(source);
 	matcher.setTargetPointCloud(target.cloud);
 	// set initial pose from robot localization
 	matcher.setSourceInitialPose(Eigen::Matrix4f::Identity());
 	Eigen::Matrix4f final_pose = matcher.align_point2plane(20);
-	//double dist = sqrt(pow(final_pose(0,3), 2) + pow(final_pose(1,3), 2) + pow(final_pose(2,3), 2));
+
 	return final_pose;
 }
 
@@ -648,6 +701,46 @@ void KalmanTracker::optimalAssociation(const std::vector<zeus_msgs::BoundingBox3
             else
                 indices[object_indices[i]] = dets_indices[assignments[i]];
         }
+    }
+    for (uint j = 0; j < M; j++) {
+        if (!is_member(indices, j))
+            notassoc.push_back(j);
+    }
+}
+
+
+void KalmanTracker::optimalAssociationSM(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int> &indices,
+                                       std::vector<int> &notassoc, double current_time) {
+    uint N = X.size();
+    uint M = dets.size();
+    if (N == 0) {
+        indices.clear();
+        notassoc = std::vector<int>(M, -1);
+        return;
+    }
+    indices = std::vector<int>(N, -1);
+    if (M == 0) {
+        indices = std::vector<int>(N, -1);
+        notassoc.clear();
+        return;
+    }
+
+    notassoc.clear();
+    std::vector<int> object_indices;
+    for (uint i(0); i<N; i++) object_indices.push_back(i);
+
+    std::vector<int> dets_indices;
+    for (uint j(0); j<M; j++) dets_indices.push_back(j);
+
+    double infeasible_cost = std::numeric_limits<double>::infinity();
+
+    Eigen::MatrixXd costMatrix = generateCostMatrixSM(dets, dets_indices, object_indices, infeasible_cost);
+    std::vector<int> assignments = kalman::association(costMatrix, 0, infeasible_cost);
+    for (uint i = 0; i < assignments.size(); i++) {
+        if (assignments[i] < 0)
+            indices[object_indices[i]] = -1;
+        else
+            indices[object_indices[i]] = dets_indices[assignments[i]];
     }
     for (uint j = 0; j < M; j++) {
         if (!is_member(indices, j))

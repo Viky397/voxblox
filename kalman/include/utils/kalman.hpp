@@ -302,6 +302,9 @@ class KalmanTracker {
     Eigen::MatrixXd generateCostMatrix(const std::vector<zeus_msgs::BoundingBox3D> &dets,
         std::vector<int> dets_indices, std::vector<int> object_indices, double &infeasible_cost);
 
+    Eigen::MatrixXd generateCostMatrixSM(const std::vector<zeus_msgs::BoundingBox3D> &dets,
+            std::vector<int> dets_indices, std::vector<int> object_indices, double &infeasible_cost);
+
     /*!
        \brief This method first clusters objects and detections together based on the maximum association distance
        defined by metricGate. Then, it generates a cost matrix for each cluster and uses the optimal association
@@ -315,6 +318,9 @@ class KalmanTracker {
     */
     void optimalAssociation(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int>& indices,
         std::vector<int>& notassoc, double current_time);
+
+    void optimalAssociationSM(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int>& indices,
+            std::vector<int>& notassoc, double current_time);
 
     bool boxSizeSimilarToPed(const Object& obj);
     bool boxSizeSimilarToPed(const zeus_msgs::BoundingBox3D& obj);
