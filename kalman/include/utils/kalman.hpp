@@ -157,7 +157,7 @@ class KalmanTracker {
 
       \param Tco Transformation from the static world frame to the sensor frame.
    */
-   void prune(Eigen::Matrix4f robot_pose);
+   void prune(Eigen::Matrix4f robot_pose, bool prune_by_confidence);
 
    /*!
       \brief This method prunes object tracks that overlap when projected onto the image plane.

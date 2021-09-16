@@ -227,7 +227,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
     return std::vector<pcl::PointCloud<pcl::PointXYZRGB> >{sources, targets, refines};
 }
 
-void KalmanTracker::prune(Eigen::Matrix4f robot_pose) {
+void KalmanTracker::prune(Eigen::Matrix4f robot_pose, bool prune_by_confidence) {
 	std::vector<Object> Xout;
 	std::vector<int> delete_indices;
     // First, prune objects outside the BEV
@@ -263,7 +263,7 @@ void KalmanTracker::prune(Eigen::Matrix4f robot_pose) {
             }
 
         }
-        if (X[i].confidence < 0.2) {
+        if (prune_by_confidence && X[i].confidence < 0.2) {
             delete_indices.push_back(i);
             std::cout << "[JQ3] Remove object for low confidence " << X[i].ID << std::endl;
         }
