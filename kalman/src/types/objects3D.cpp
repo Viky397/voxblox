@@ -52,6 +52,8 @@ double Object::getAge(double t) {
 std::vector<double> Object::mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl) {
 	auto cloud_merged = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB> >(*cloud + *cloud_pcl);
 	cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+	new_obs.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+	new_obs = cloud_pcl;
 
     pcl::UniformSampling<pcl::PointXYZRGB> filter;
 	filter.setInputCloud(cloud_merged);

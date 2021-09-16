@@ -100,7 +100,7 @@ class KalmanTrackerNode {
     	return kalmantracker;
     }
 
-    void updateObjectConfidence(std::map<int, double> measurements);
+    void updateObjectConfidence(std::map<int, double> measurements, double std);
 
  private:
     Eigen::Matrix4d Tic2 = Eigen::Matrix4d::Identity();     /*!< Transform from c2 to imu_link */

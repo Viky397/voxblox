@@ -16,3 +16,4 @@ int32 camera
 bool is_observed
 bool is_new
 sensor_msgs/PointCloud2 cloud
+sensor_msgs/PointCloud2 new_obs

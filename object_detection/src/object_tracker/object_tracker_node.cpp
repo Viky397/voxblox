@@ -163,7 +163,7 @@ void KalmanTrackerNode::initialize_transforms() {
 	//ROS_INFO_STREAM("[OBJ] object_tracker transforms initialized");
 }
 
-void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurements) {
+void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurements, double std) {
 	auto& objects = kalmantracker->get_mutable_object_list();
 	std::map<int, size_t> id_idx_lut;
 	for (size_t idx(0); idx<objects.size(); idx++) {
@@ -173,7 +173,7 @@ void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurement
 		if (id_idx_lut.count(pair.first) == 0) {
 			throw std::runtime_error("ERROR: Object index not found!");
 		}
-		objects.at(id_idx_lut.at(pair.first)).updateProbability(pair.second, 0.1);
+		objects.at(id_idx_lut.at(pair.first)).updateProbability(pair.second, std);
 	}
 }
 
@@ -201,6 +201,13 @@ void convertToRosMessage(const std::vector<Object>& object_list,
 		sensor_msgs::PointCloud2 cloud_msg;
 		pcl::toROSMsg(*object_list[i].cloud, cloud_msg);
 		detection.cloud = cloud_msg;
+
+		if (object_list[i].is_observed) {
+			sensor_msgs::PointCloud2 new_obs_msg;
+			pcl::toROSMsg(*object_list[i].new_obs, new_obs_msg);
+			detection.new_obs = new_obs_msg;
+		}
+
 		outputDetections.bbs.push_back(detection);
 	}
 }
