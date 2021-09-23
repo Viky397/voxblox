@@ -218,7 +218,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
 
         } else {
         	if (X[i].expectedToObserve(robot_pose2+Pose2(0.43,0,0), 75)) {
-        		X[i].updateProbability(10, 0.1);
+        		X[i].updateProbability(100, 0.01);
         		std::cout << "[JQ3] Lower confidence for object " << X[i].ID << " with conf " << X[i].confidence << std::endl;
         	}
         }
