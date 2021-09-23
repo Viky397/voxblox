@@ -143,17 +143,18 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	std::chrono::duration<double> elapsed = stop - start;
 	ROS_DEBUG_STREAM("[OBJ] KALMAN TRACKER TIME: " << elapsed.count());
 
-
-	sensor_msgs::PointCloud2 sm_msg;
-	pcl::toROSMsg(sm_results[0], sm_msg);
-	sm_msg.header.frame_id = "map";
-	sm_source_pub_.publish(sm_msg);
-	pcl::toROSMsg(sm_results[1], sm_msg);
-	sm_msg.header.frame_id = "map";
-	sm_target_pub_.publish(sm_msg);
-	pcl::toROSMsg(sm_results[2], sm_msg);
-	sm_msg.header.frame_id = "map";
-	sm_refined_pub_.publish(sm_msg);
+	if (!sm_results.empty()) {
+		sensor_msgs::PointCloud2 sm_msg;
+		pcl::toROSMsg(sm_results[0], sm_msg);
+		sm_msg.header.frame_id = "map";
+		sm_source_pub_.publish(sm_msg);
+		pcl::toROSMsg(sm_results[1], sm_msg);
+		sm_msg.header.frame_id = "map";
+		sm_target_pub_.publish(sm_msg);
+		pcl::toROSMsg(sm_results[2], sm_msg);
+		sm_msg.header.frame_id = "map";
+		sm_refined_pub_.publish(sm_msg);
+	}
 
 	return outputDetections;
 }

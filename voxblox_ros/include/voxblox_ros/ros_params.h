@@ -73,6 +73,8 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
                    integrator_config.voxel_carving_enabled);
   nh_private.param("truncation_distance", truncation_distance,
                    truncation_distance);
+  nh_private.param("prune_distance", integrator_config.prune_distance,
+		  	  	   integrator_config.prune_distance);
   nh_private.param("max_ray_length_m", integrator_config.max_ray_length_m,
                    integrator_config.max_ray_length_m);
   nh_private.param("min_ray_length_m", integrator_config.min_ray_length_m,

@@ -11,6 +11,7 @@ namespace voxblox {
 
 struct TsdfVoxel {
   float distance = 0.0f;
+  float true_distance = 0.0f;
   float weight = 0.0f;
   Color color;
 };

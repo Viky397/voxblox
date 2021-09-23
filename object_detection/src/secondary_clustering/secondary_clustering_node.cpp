@@ -5,15 +5,22 @@
 #include <opencv2/core.hpp>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include "utils/zeus_pcl.hpp"
+#include "utils/line_of_sight_filter.hpp"
 
 zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& scan, const Eigen::Matrix4d& T_oc) {
 	zeus_msgs::Detections3D outputDetections;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_scan_los(new pcl::PointCloud<pcl::PointXYZRGB>);
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_scan(new pcl::PointCloud<pcl::PointXYZRGB>);
 
+	kalman::LOSFilter los_filter(87, 75);
+	std::cout << "[JQ7] before los filter: " << scan->points.size() << std::endl;
+	los_filter.filter(scan, filtered_scan_los);
+	std::cout << "[JQ7]      after los filter: " << filtered_scan_los->points.size() << std::endl;
+
 	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
-	sor.setInputCloud(scan);
-	sor.setMeanK(30);
-	sor.setStddevMulThresh(1.0);
+	sor.setInputCloud(filtered_scan_los);
+	sor.setMeanK(50);
+	sor.setStddevMulThresh(0.3);
 	sor.filter(*filtered_scan);
 
 	sensor_msgs::PointCloud2 gp_prior_msg;
@@ -23,13 +30,16 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
     zeus_pcl::fromPCLRGB(*filtered_scan, pc);
 
     Eigen::Matrix4d C_oc = Eigen::Matrix4d::Identity();
-    Eigen::Matrix4d r_oc = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d r_oc_xy = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d r_oc_z = Eigen::Matrix4d::Identity();
     C_oc.block<3,3>(0,0) = T_oc.block<3,3>(0,0);
+    r_oc_z.block<1,1>(2,3) = T_oc.block<1,1>(2,3);
     zeus_pcl::transform_cloud(pc, C_oc);
-    zeus_pcl::passthrough(pc, gp_prior, -3, 3, -3, 3, 0.1, 3.5);
+    zeus_pcl::transform_cloud(pc, r_oc_z);
+    zeus_pcl::passthrough(pc, gp_prior, -100, 100, -100, 100, 0.1, 3.5);
 
-    r_oc.block<3,1>(0,3) = T_oc.block<3,1>(0,3);
-    zeus_pcl::transform_cloud(gp_prior, r_oc);
+    r_oc_xy.block<2,1>(0,3) = T_oc.block<2,1>(0,3);
+    zeus_pcl::transform_cloud(gp_prior, r_oc_xy);
 
     pcl_conversions::fromPCL(scan->header, outputDetections.header);
     outputDetections.header.frame_id = "map";

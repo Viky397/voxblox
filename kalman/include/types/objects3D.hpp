@@ -68,10 +68,10 @@ class Object {
     int camera = 1;                                         /*!< Which camera was the object observed in. */
     bool is_observed = false;
     bool is_new = false;
-    double last_observed_time;
+    double last_observed_time = -1;
     double delta_t = 0.1;                                   /*!< current_time - last_observed_time */
-    double first_observed_time;
-    double last_updated;
+    double first_observed_time = -1;
+    double last_updated = -1;
     double a = 2.0;
     double b = 2.0;
     double mu = 0.0;

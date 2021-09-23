@@ -146,7 +146,7 @@ void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
   temp_block_map_.clear();
 }
 
-std::tuple<float, float, float> TsdfIntegratorBase::calculateNewWeightAndDistance (
+std::tuple<float, float, float, float> TsdfIntegratorBase::calculateNewWeightAndDistance (
 												 const Point& origin,
 		                                         const Point& point_G,
 		                                         const GlobalIndex& global_voxel_idx,
@@ -186,19 +186,21 @@ std::tuple<float, float, float> TsdfIntegratorBase::calculateNewWeightAndDistanc
 	  // it is possible to have weights very close to zero, due to the limited
 	  // precision of floating points dividing by this small value can cause nans
 	  if (new_weight < kFloatEpsilon) {
-	    return std::tuple<float, float, float>{tsdf_voxel->weight, tsdf_voxel->distance, updated_weight};
+	    return std::tuple<float, float, float, float>{
+	    	tsdf_voxel->weight, tsdf_voxel->true_distance,
+	    	tsdf_voxel->distance, updated_weight};
 	  }
 
-	  const float new_sdf =
+	  float new_sdf =
 	      (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
 	      new_weight;
 
 	  float result_weight = std::min(config_.max_weight, new_weight);
-	  float result_distance = (new_sdf > 0.0) ?
-			  std::min(config_.default_truncation_distance, new_sdf) :
+	  float new_tsdf = (new_sdf > 0.0) ?
+	       	std::min(config_.default_truncation_distance, new_sdf) :
               std::max(-config_.default_truncation_distance, new_sdf);
 
-	  return std::tuple<float, float, float>{result_weight, result_distance, updated_weight};
+	  return std::tuple<float, float, float, float>{result_weight, sdf, new_tsdf, updated_weight};
 }
 
 // Updates tsdf_voxel. Thread safe.
@@ -209,19 +211,20 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
                                          TsdfVoxel* tsdf_voxel) {
   DCHECK(tsdf_voxel != nullptr);
 
-  auto [new_weight, new_distance, updated_weight] = calculateNewWeightAndDistance(
+  auto [new_weight, sdf, tsdf, updated_weight] = calculateNewWeightAndDistance(
 		  origin, point_G, global_voxel_idx, weight, tsdf_voxel);
 
   // Lookup the mutex that is responsible for this voxel and lock it
   std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
 
-  if (fabs(new_distance) < config_.default_truncation_distance) {
+  if (fabs(tsdf) < config_.default_truncation_distance) {
   	    tsdf_voxel->color = Color::blendTwoColors(
   	        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
   }
 
   tsdf_voxel->weight = new_weight;
-  tsdf_voxel->distance = new_distance;
+  tsdf_voxel->distance = tsdf;
+  tsdf_voxel->true_distance = sdf;
 }
 
 // Thread safe.

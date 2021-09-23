@@ -15,6 +15,8 @@
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/io/pcd_io.h>
 
+#include "utils/normal_estimation.hpp"
+
 
 namespace kalman {
 
@@ -212,31 +214,8 @@ private:
 
 	void normal_estmation(pcl::PointCloud<pcl::PointXYZ>::Ptr pcd, pcl::PointCloud<pcl::PointNormal>::Ptr output_PointNormal)
 	{
-		pcl::PointCloud<pcl::Normal> normals;
-		pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_estimation;
-		normal_estimation.setInputCloud(pcd);
-		normal_estimation.setSearchSurface(pcd);
-		pcl::search::KdTree<pcl::PointXYZ>::Ptr search_tree(new pcl::search::KdTree<pcl::PointXYZ>);
-		normal_estimation.setSearchMethod(search_tree);
-		normal_estimation.setKSearch(50);
-		normal_estimation.compute(normals);
-		for (int i = 0; i < normals.size(); i++)
-		{
-			pcl::PointXYZ pt = (*pcd)[i];
-			pcl::Normal nl = normals[i];
-			if (pcl_isinf(nl.normal_x) || pcl_isinf(nl.normal_y) || pcl_isinf(nl.normal_z))
-			{
-				continue;
-			}
-			pcl::PointNormal pt_nl;
-			pt_nl.x = pt.x;
-			pt_nl.y = pt.y;
-			pt_nl.z = pt.z;
-			pt_nl.normal_x = nl.normal_x;
-			pt_nl.normal_y = nl.normal_y;
-			pt_nl.normal_z = nl.normal_z;
-			output_PointNormal->push_back(pt_nl);
-		}
+		NormEstimator normal_estimator;
+		normal_estimator.estimate(pcd, output_PointNormal, 50, true);
 	}
 
 
