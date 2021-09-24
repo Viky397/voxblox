@@ -20,11 +20,8 @@ namespace kalman {
 
 class LOSFilter{
 public:
-	LOSFilter(float h_fov_deg, float max_angle_deg) {
-		h_fov_deg_ = fabs(h_fov_deg);
+	LOSFilter(float max_angle_deg) {
 		max_angle_deg_ = fabs(max_angle_deg);
-
-		h_fov_rad_ = h_fov_deg_ / 180.0 * M_PI;
 		max_angle_rad_ = max_angle_deg_ / 180.0 * M_PI;
 	}
 
@@ -45,12 +42,12 @@ public:
 			float cos_theta = 0;
 			float theta = 90;
 
-			Eigen::Vector2f los(pt_normal.x, pt_normal.z);
+			Eigen::Vector3f los(pt_normal.x, pt_normal.y, pt_normal.z);
 			los /= los.norm();
-			Eigen::Vector2f normal(pt_normal.normal_x, pt_normal.normal_z);
+			Eigen::Vector3f normal(pt_normal.normal_x, pt_normal.normal_y, pt_normal.normal_z);
 			normal /= normal.norm();
 
-			cos_theta = los[0] * normal[0] + los[1] * normal[1];
+			cos_theta = los[0] * normal[0] + los[1] * normal[1] + los[2] * normal[2];
 			theta = fabs(wrapAngle(acos(cos_theta)));
 
 			//std::cout << "Point " << idx << " los: " << los[0] << "  " << los[1] << std::endl;
@@ -62,8 +59,6 @@ public:
 				pcd_out->push_back(pcd_in->points.at(idx));
 				//std::cout << "      " << " Push" << std::endl;
 			}
-
-
 		}
 	}
 
@@ -79,10 +74,7 @@ private:
 	    return angle;
 	}
 
-	float h_fov_deg_;
 	float max_angle_deg_;
-	
-	float h_fov_rad_;
 	float max_angle_rad_;
 
 };

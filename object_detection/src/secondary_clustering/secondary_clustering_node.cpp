@@ -12,7 +12,7 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_scan_los(new pcl::PointCloud<pcl::PointXYZRGB>);
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_scan(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-	kalman::LOSFilter los_filter(87, 75);
+	kalman::LOSFilter los_filter(75);
 	std::cout << "[JQ7] before los filter: " << scan->points.size() << std::endl;
 	los_filter.filter(scan, filtered_scan_los);
 	std::cout << "[JQ7]      after los filter: " << filtered_scan_los->points.size() << std::endl;

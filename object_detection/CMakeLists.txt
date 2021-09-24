@@ -74,8 +74,8 @@ add_dependencies(object_tracker zeus_msgs_generate_messages_cpp)
 
 # Probability Test
 add_executable(test_prob src/object_tracker/test_prob.cpp)
-target_link_libraries(object_tracker
+target_link_libraries(test_prob
   object_detection_lib
 )
-add_dependencies(object_tracker zeus_msgs_generate_messages_cpp)
+add_dependencies(test_prob zeus_msgs_generate_messages_cpp)
 
