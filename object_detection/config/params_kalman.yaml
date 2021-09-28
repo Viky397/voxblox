@@ -19,7 +19,7 @@ unknown_dynamic_type: 4 # This type corresponds to an "unknown dynamic" object
 cost_alpha: 0.25
 cost_beta: 0.5
 # HiddenMarkovModel Parameters
-types: [1, 3, 4]           # [Pedestrian, Unknown Static, Unknown Dynamic]
+types: [1, 2, 3]           # [Pedestrian, Unknown Static, Unknown Dynamic]
 # p(z_t = i | z_{t-1} = j)
 A_hmm: [0.990, 0.10, 0.15,        # Transition Matrix (Columns must sum to one)
         0.005, 0.75, 0.10,
@@ -33,15 +33,3 @@ pi_hmm: [0.325, 0.35, 0.325]
 # static/dynamic object confidences
 dynamic_obj_conf: 0.95
 static_obj_conf: 0.725
-# deer dimensions
-deer_L: [0.40, 0.94]
-deer_W: [0.95, 1.40]
-deer_H: [0.55, 1.35]
-# barrel dimensions
-barrel_L: [0.32, 0.65]
-barrel_W: [0.32, 0.65]
-barrel_H: [0.50, 0.97]
-# pedestrian dimensions
-ped_L: [0.25, 1.15]
-ped_W: [0.25, 1.15]
-ped_H: [0.50, 2.50]

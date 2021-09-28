@@ -86,14 +86,12 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
         X.push_back(create_new(dets[notassoc[j]], objectID, current_time));
         indices.push_back(notassoc[j]);
     }
-    // Check if objects can be deleted
-    bool classify_barrel = true;
 
     for (uint i = 0; i < X.size(); i++) {
         if (indices[i] >= 0) {
             if (is_object_tracker) {
                 std::vector<float> confidences(1, dets[indices[i]].confidence);
-                X[i].push_type(unknown_type, confidences);
+                X[i].push_type(dets[indices[i]].type, confidences);
             }
 
             X[i].camera = dets[indices[i]].camera;
