@@ -195,6 +195,8 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
 
             // std::cout << "[JQ] Scan match result: " << sc_tf << std::endl;
 
+            //sc_tf = (norm(sc_tf) <= 1.0 && norm(sc_tf) >= 0.001) ? sc_tf : Eigen::Matrix4f::Identity();
+
             pcl::transformPointCloud(*cloud_pcl, *pcd_refine, sc_tf);
 
             refines += *pcd_refine;

@@ -61,7 +61,7 @@ class SecondaryClusteringNode {
 		det_pub_ = nh_.advertise<zeus_msgs::Detections3D>("/Object/RawDetections3D", 1);
 		gp_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/Object/GroundPlane3D", 1);
 		gp_prior_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/Object/GroundPlanePrior3D", 1);
-	    gt_line_pub_ = nh_.advertise<visualization_msgs::Marker>("/Object/GroundPlaneLines", 1);
+		normal_line_pub_ = nh_.advertise<visualization_msgs::Marker>("/surface_normal", 1);
 
 	    set_node_name();
 	    get_ros_parameters();
@@ -99,7 +99,7 @@ class SecondaryClusteringNode {
     ros::Publisher det_pub_;
     ros::Publisher gp_pub_;
     ros::Publisher gp_prior_pub_;
-    ros::Publisher gt_line_pub_;
+    ros::Publisher normal_line_pub_;
 
     std::string node_name = "secondary_clustering";
 

@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1/Tree1
+        - /ICPSource1
       Splitter Ratio: 0.7757961750030518
     Tree Height: 953
   - Class: rviz/Selection
@@ -318,7 +319,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 5
+      Size (Pixels): 10
       Size (m): 0.009999999776482582
       Style: Points
       Topic: /SM/Source
@@ -354,6 +355,14 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /surface_normal
+      Name: Surface Normal
+      Namespaces:
+        surface_normal: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 46; 52; 54
@@ -382,7 +391,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 15.680275917053223
+      Distance: 11.852624893188477
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -390,9 +399,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.6521942615509033
-        Y: -3.0694339275360107
-        Z: 1.5974044799804688e-05
+        X: 1.3328884840011597
+        Y: 0.02691066265106201
+        Z: 1.52587890625e-05
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -400,7 +409,7 @@ Visualization Manager:
       Near Clip Distance: 0.009999999776482582
       Pitch: 1.5697963237762451
       Target Frame: imu_link_local
-      Yaw: 3.026322364807129
+      Yaw: 2.9994804859161377
     Saved: ~
 Window Geometry:
   Displays:
