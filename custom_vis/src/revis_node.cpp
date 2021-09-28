@@ -142,14 +142,14 @@ public:
 
 			if (bbs[i].type == 1){
 				obstacle_marker.color.r = 0.0;
-				obstacle_marker.color.g = 1.0;
+				obstacle_marker.color.g = 0.75;
 				obstacle_marker.color.b = 0.0;
 			} else if (bbs[i].type == 2) {
 				obstacle_marker.color.r = 0.7;
 				obstacle_marker.color.g = 0.6;
 				obstacle_marker.color.b = 0.0;
 			} else if (bbs[i].type == 3) {
-				obstacle_marker.color.r = 1.0;
+				obstacle_marker.color.r = 0.8;
 				obstacle_marker.color.g = 0.0;
 				obstacle_marker.color.b = 0.0;
 			}
