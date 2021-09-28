@@ -7,7 +7,6 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1/Tree1
-        - /Observations1/Status1
       Splitter Ratio: 0.7757961750030518
     Tree Height: 953
   - Class: rviz/Selection

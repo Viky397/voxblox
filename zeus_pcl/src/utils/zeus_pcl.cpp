@@ -22,15 +22,9 @@ static uint16_t getUint16FromByteArray(auto *byteArray, uint index) {
 void fromPCLRGB(const pcl::PointCloud<pcl::PointXYZRGB>& pclIn, PointCloudPtr cloudOut) {
 	cloudOut->resize(pclIn.size());
 	for (size_t i = 0; i < pclIn.size(); ++i) {
-		cloudOut->points[i].x = pclIn.points[i].x;
-		cloudOut->points[i].y = pclIn.points[i].y;
-		cloudOut->points[i].z = pclIn.points[i].z;
-		cloudOut->points[i].r = pclIn.points[i].r;
-		cloudOut->points[i].g = pclIn.points[i].g;
-		cloudOut->points[i].b = pclIn.points[i].b;
-		cloudOut->points[i].c = 1.0;
-		// std::cout << "[JQ] cloud in: r: " << (int)pclIn.points[i].r << " g: " << (int)pclIn.points[i].g << " b: "<< (int)pclIn.points[i].b << std::endl;
-		// std::cout << "[JQ] cloud out: r: " << cloudOut->points[i].r << " g: " << cloudOut->points[i].g << " b: "<< cloudOut->points[i].b << std::endl;
+		PointXYZ pt(pclIn.points[i].x, pclIn.points[i].y, pclIn.points[i].z,
+				pclIn.points[i].r, pclIn.points[i].g, pclIn.points[i].b);
+		cloudOut->points[i] = pt;
 	  }
 }
 
@@ -48,14 +42,16 @@ void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr c
     auto *data = ros_msg->data.data();
     uint total_size = ros_msg->width * ros_msg->height;
     for (uint i = 0; i < total_size * point_step; i += point_step) {
-        cloudOut->points[j].x = getFloatFromByteArray(data, i + x_offset);
-        cloudOut->points[j].y = getFloatFromByteArray(data, i + y_offset);
-        cloudOut->points[j].z = getFloatFromByteArray(data, i + z_offset);
-        cloudOut->points[j].b = ros_msg->data[i + b_offset];
-        cloudOut->points[j].g = ros_msg->data[i + g_offset];
-        cloudOut->points[j].r = ros_msg->data[i + r_offset];
-        cloudOut->points[j].c = 1.0;
-        std::cout << "color: r: " << cloudOut->points[j].r << " g: " << cloudOut->points[j].g << " b: "<< cloudOut->points[j].b << std::endl;
+        float pt_x = getFloatFromByteArray(data, i + x_offset);
+        float pt_y = getFloatFromByteArray(data, i + y_offset);
+        float pt_z = getFloatFromByteArray(data, i + z_offset);
+        int pt_b = (int)ros_msg->data[i + b_offset];
+        int pt_g = (int)ros_msg->data[i + g_offset];
+        int pt_r = (int)ros_msg->data[i + r_offset];
+
+        PointXYZ pt(pt_x, pt_y, pt_z, pt_r, pt_g, pt_b);
+        cloudOut->points[i] = pt;
+
         j++;
     }
 }

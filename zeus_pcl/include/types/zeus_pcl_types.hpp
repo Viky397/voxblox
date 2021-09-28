@@ -34,14 +34,22 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
+#include "types/colors.hpp"
+
 namespace zeus_pcl {
 
 class PointXYZ {
  public:
-    float x, y, z, r, g, b, c;
+    float x, y, z;
+	int r, g, b;
+    unsigned int c;
     PointXYZ() {x = 0; y = 0; z = 0; r = 0; g = 0; b = 0; c = 0;}
-    PointXYZ(float x0, float y0, float z0, float r0, float g0, float b0, float c0 = 0) {
-    	x = x0; y = y0; z = z0; r = r0; g = g0; b = b0; c = c0;
+    PointXYZ(float x0, float y0, float z0, int r0, int g0, int b0) {
+    	x = x0; y = y0; z = z0; r = r0; g = g0; b = b0; c = RGBToInt(r,g,b);
+    }
+    PointXYZ(float x0, float y0, float z0, unsigned int c0) {
+        x = x0; y = y0; z = z0; c = c0;
+        IntToRGB(c, r, g, b);
     }
     // array-type accesor
     float operator [] (int i) const {
@@ -74,16 +82,16 @@ class PointXYZ {
         z /= norm;
     }
     PointXYZ cross(const PointXYZ P) const {
-        return PointXYZ(y*P.z - z*P.y, z*P.x - x*P.z, x*P.y - y*P.x, r, g, b, c);
+        return PointXYZ(y*P.z - z*P.y, z*P.x - x*P.z, x*P.y - y*P.x, r, g, b);
     }
     PointXYZ operator - (const PointXYZ &p) {
-        return PointXYZ(this->x - p.x, this->y - p.y, this->z - p.z, r, g, b, c);
+        return PointXYZ(this->x - p.x, this->y - p.y, this->z - p.z, r, g, b);
     }
     PointXYZ operator + (const PointXYZ &p) {
-        return PointXYZ(this->x + p.x, this->y + p.y, this->z + p.z, r, g, b, c);
+        return PointXYZ(this->x + p.x, this->y + p.y, this->z + p.z, r, g, b);
     }
     PointXYZ operator * (const float &a) {
-        return PointXYZ(this->x * a, this->y * a, this->z * a, r, g, b, c);
+        return PointXYZ(this->x * a, this->y * a, this->z * a, r, g, b);
     }
     bool operator == (const PointXYZ &p) {
         return this->x == p.x && this->y == p.y && this->z == p.z;
