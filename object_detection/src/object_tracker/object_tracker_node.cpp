@@ -138,7 +138,7 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	// zeus_tf::get_rpy_from_odom(*odom, rpy);
 	// convertToRosMessage(object_list, outputDetections, (float)rpy[2]);
 	convertToRosMessage(object_list, outputDetections, (float)0);
-	det_pub_.publish(outputDetections);
+	// det_pub_.publish(outputDetections);
 	auto stop = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed = stop - start;
 	ROS_DEBUG_STREAM("[OBJ] KALMAN TRACKER TIME: " << elapsed.count());

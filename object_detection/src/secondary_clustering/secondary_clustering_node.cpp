@@ -48,7 +48,7 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
     // Secondary Clustering
     secondary_clustering(gp_prior, outputDetections);
     // Publish ROS Message
-    det_pub_.publish(outputDetections);
+    // det_pub_.publish(outputDetections);
 
     zeus_pcl::toROSMsg(gp_prior, gp_prior_msg, "map");
     gp_prior_pub_.publish(gp_prior_msg);
