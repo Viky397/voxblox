@@ -20,12 +20,10 @@ public:
     bool IntToRGB(unsigned int rgb, int& r, int& g, int& b);
 
     std::vector<std::string> OriLines;
-
     std::vector<std::string> Labels;
     std::vector<std::string> Dynamicness;
     std::vector<std::string> Color;
     std::vector<unsigned int> RGB;
-
 
 };
 
@@ -52,7 +50,7 @@ bool csvParser::loadData(const std::string& csv_path)
         OriLines.push_back(line);
 
         vector<string> s;
-        boost::split( s, line, boost::is_any_of( "," ), boost::token_compress_on );
+        boost::split(s, line, boost::is_any_of( "," ), boost::token_compress_on );
 
         if(s.size() == 6){
             std::string semanticlabel = s[0];

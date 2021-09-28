@@ -48,6 +48,10 @@ class ObjectInstance {
             return pose_;
         }
 
+        const size_t& getLabel() const{
+        	return semantic_label_;
+        }
+
         void addIndex(const GlobalIndex& idx) {
         	voxel_indices_.insert(idx);
         }
