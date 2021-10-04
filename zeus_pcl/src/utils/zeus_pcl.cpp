@@ -19,16 +19,23 @@ static uint16_t getUint16FromByteArray(auto *byteArray, uint index) {
     return *( (uint16_t *)(byteArray + index));
 }
 
-void fromPCLRGB(const pcl::PointCloud<pcl::PointXYZRGB>& pclIn, PointCloudPtr cloudOut) {
+int fromPCLRGB(const pcl::PointCloud<pcl::PointXYZRGB>& pclIn, PointCloudPtr cloudOut, std::shared_ptr<Color> color) {
+	std::vector<int> dyn_score{0,0,0};
 	cloudOut->resize(pclIn.size());
 	for (size_t i = 0; i < pclIn.size(); ++i) {
 		PointXYZ pt(pclIn.points[i].x, pclIn.points[i].y, pclIn.points[i].z,
 				pclIn.points[i].r, pclIn.points[i].g, pclIn.points[i].b);
+		if (color) {
+			pt.dynamicness = color->getDynamicTypeFromRGB(pt.r, pt.g, pt.b);
+			dyn_score.at(pt.dynamicness)++;
+		}
 		cloudOut->points[i] = pt;
-	  }
+	 }
+	return std::distance(dyn_score.begin(),std::max_element(dyn_score.begin(), dyn_score.end()));
 }
 
-void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr cloudOut) {
+int fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr cloudOut, std::shared_ptr<Color> color) {
+	std::vector<int> dyn_score{0,0,0};
     cloudOut->resize(ros_msg->width);
     std::cout << "size: " << ros_msg->width << std::endl;
     uint32_t point_step = ros_msg->point_step;
@@ -50,10 +57,15 @@ void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr c
         int pt_r = (int)ros_msg->data[i + r_offset];
 
         PointXYZ pt(pt_x, pt_y, pt_z, pt_r, pt_g, pt_b);
+        if (color) {
+        	pt.dynamicness = color->getDynamicTypeFromRGB(pt.r, pt.g, pt.b);
+        	dyn_score.at(pt.dynamicness)++;
+        }
         cloudOut->points[i] = pt;
 
         j++;
     }
+    return std::distance(dyn_score.begin(),std::max_element(dyn_score.begin(), dyn_score.end()));
 }
 
 void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, IPointCloudPtr cloudOut) {
@@ -133,6 +145,47 @@ void toROSMsg(PointCloudPtr pc, sensor_msgs::PointCloud2& msg, std::string frame
     msg.fields.push_back(field);
 
     msg.header.frame_id = frame;
+}
+
+void applyDynamicness(PointCloudPtr cloudIn, std::shared_ptr<Color> color) {
+	std::cout << "[JQ7] Apply dynamic type from RGB" << std::endl;
+	if (!cloudIn || !color) throw std::runtime_error("Color null");
+    for (uint i = 0; i < cloudIn->size(); i++) {
+    	PointXYZ& pt = cloudIn->points[i];
+    	int dynamicness = color->getDynamicTypeFromRGB(pt.r, pt.g, pt.b);
+    	pt.dynamicness = dynamicness;
+    }
+}
+
+void applyDynamicness(PointCloudPtr cloudIn, int type) {
+	if (!cloudIn) throw std::runtime_error("Color null");
+    for (uint i = 0; i < cloudIn->size(); i++) {
+    	cloudIn->points[i].dynamicness = type;
+    }
+}
+
+void divideByDynamicness(PointCloudPtr cloudIn, std::vector<PointCloudPtr>& cloudsOut, std::shared_ptr<Color> color) {
+    for (uint i = 0; i < cloudIn->size(); i++) {
+    	PointXYZ& pt = cloudIn->points[i];
+    	int dynamicness = color->getDynamicTypeFromRGB(pt.r, pt.g, pt.b);
+    	pt.dynamicness = dynamicness;
+    	cloudsOut[dynamicness]->points.push_back(pt);
+    }
+}
+
+PointCloudPtr filterAndCombinePlanes(const std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& pcl_planes, std::shared_ptr<Color> color) {
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd_pcl(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+	PointCloudPtr pcd(new PointCloud);
+
+	for (size_t i(0); i<pcl_planes.size(); i++) {
+		auto& pcl_plane_ptr = pcl_planes.at(i);
+		PointCloudPtr plane_temp(new PointCloud);
+		int dynamicness = fromPCLRGB(*pcl_plane_ptr, plane_temp, color);
+		applyDynamicness(plane_temp, dynamicness);
+		pcd->points.insert(pcd->points.begin(), plane_temp->points.begin(),plane_temp->points.end());
+	}
+	return pcd;
 }
 
 void copyCloud(PointCloudPtr cloudIn, PointCloudPtr cloudOut) {

@@ -53,12 +53,12 @@ struct greater_than_bb {
   }
 };
 
-void fromPCLRGB(const pcl::PointCloud<pcl::PointXYZRGB>& pclIn, PointCloudPtr cloudOut);
+int fromPCLRGB(const pcl::PointCloud<pcl::PointXYZRGB>& pclIn, PointCloudPtr cloudOut, std::shared_ptr<Color> color=nullptr);
 
 /*!
    \brief Convert a PointCloud2 ROS message into our custom pointcloud format. (x, y, z)
 */
-void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr cloudOut);
+int fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, PointCloudPtr cloudOut, std::shared_ptr<Color> color=nullptr);
 
 /*!
    \brief Convert a PointCloud2 ROS message into our custom pointcloud format. (x, y, z, i)
@@ -71,6 +71,12 @@ void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, IPointCloudPtr 
 */
 void toROSMsg(PointCloudPtr pc, sensor_msgs::PointCloud2& msg, std::string frame="");
 
+
+void applyDynamicness(PointCloudPtr cloudIn, std::shared_ptr<Color> color);
+
+void divideByDynamicness(PointCloudPtr cloudIn, std::vector<PointCloudPtr>& cloudsOut, std::shared_ptr<Color> color);
+
+PointCloudPtr filterAndCombinePlanes(const std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& pcl_planes, std::shared_ptr<Color> color);
 /*!
    \brief Sort bounding boxes in descending order of size (size = width * height).
 */

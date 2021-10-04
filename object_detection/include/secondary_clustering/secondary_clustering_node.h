@@ -32,6 +32,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #ifndef SECONDARY_CLUSTERING_SECONDARY_CLUSTERING_NODE_H
 #define SECONDARY_CLUSTERING_SECONDARY_CLUSTERING_NODE_H
+
+#define CFG_PATH
+
 #include <ros/ros.h>
 #include <zeus_msgs/BoundingBox3D.h>
 #include <zeus_msgs/Detections3D.h>
@@ -41,6 +44,7 @@
 #include <chrono>  // NOLINT [build/c++11]
 #include <string>
 #include <vector>
+#include "types/colors.hpp"
 #include "types/zeus_pcl_types.hpp"
 #include "utils/transform_utils.hpp"
 #include <visualization_msgs/Marker.h>
@@ -62,6 +66,12 @@ class SecondaryClusteringNode {
 		gp_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/Object/GroundPlane3D", 1);
 		gp_prior_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/Object/GroundPlanePrior3D", 1);
 		normal_line_pub_ = nh_.advertise<visualization_msgs::Marker>("/surface_normal", 1);
+
+		color_ = std::make_shared<Color>();
+		//std::string color_profile = std::string(CFG_PATH) + "/object_class_prior_colour.csv";
+		std::string color_profile = "/home/jqian/kimera_ws/src/Kimera-Semantics/kimera_semantics_ros/cfg/object_class_prior_colour.csv";
+		std::cout << "[JQ7] Loading color profile from " << color_profile << std::endl;
+		color_ -> loadData(color_profile);
 
 	    set_node_name();
 	    get_ros_parameters();
@@ -122,7 +132,9 @@ class SecondaryClusteringNode {
     Eigen::Matrix4f K = Eigen::Matrix4f::Identity();
     Eigen::Vector4f gp_params = Eigen::Vector4f::Zero();
 
-    void secondary_clustering(zeus_pcl::PointCloudPtr pc, zeus_msgs::Detections3D &outputDetections);
+    std::shared_ptr<Color> color_ = nullptr;
+
+    void secondary_clustering(zeus_pcl::PointCloudPtr pc, zeus_msgs::Detections3D &outputDetections, int type);
 };
 
 #endif  // SECONDARY_CLUSTERING_SECONDARY_CLUSTERING_NODE_H

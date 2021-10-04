@@ -90,7 +90,7 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
     for (uint i = 0; i < X.size(); i++) {
         if (indices[i] >= 0) {
             if (is_object_tracker) {
-                std::vector<float> confidences(1, dets[indices[i]].confidence);
+                std::vector<float> confidences(1, X[i].confidence);
                 X[i].push_type(dets[indices[i]].type, confidences);
             }
 
@@ -129,7 +129,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
     for (int i = 0; i < N; i++) {
         X[i].type = X[i].getType();     // Get the most likely type based on the HMM
         Eigen::MatrixXd Q, R;
-        if (is_object_tracker && (X[i].type == pedestrian_type || X[i].type == unknown_dynamic_type)) {
+        if (is_object_tracker) {
             Q = Q_dynamic;
             R = R_dynamic;
         } else {
@@ -263,7 +263,7 @@ void KalmanTracker::prune(Eigen::Matrix4f robot_pose, bool prune_by_confidence) 
             }
 
         }
-        if (prune_by_confidence && X[i].confidence < 0.2) {
+        if (prune_by_confidence && X[i].confidence < 0.3) {
             delete_indices.push_back(i);
             std::cout << "[JQ3] Remove object for low confidence " << X[i].ID << std::endl;
         }
@@ -392,7 +392,6 @@ Object KalmanTracker::create_new(const zeus_msgs::BoundingBox3D &det, int &objec
         x.push_type(det.type, confidences);
     }
     x.type = x.getType();
-    x.confidence = det.confidence;
     x.ID = objectID;
     objectID++;
     x.P_hat = P0;
@@ -403,6 +402,7 @@ Object KalmanTracker::create_new(const zeus_msgs::BoundingBox3D &det, int &objec
     x.first_observed_time = current_time;
     x.last_updated = current_time;
     x.delta_t = 0.1;
+    x.initPrior();
     return x;
 }
 
@@ -543,7 +543,8 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrix(const std::vector<zeus_msgs::B
             if (d_size > 1)
                 d_size = 1;
             double d_conf = 1 - dets[dets_indices[j]].confidence;
-            costMatrix(i, j) = d_euclid + cost_alpha * d_size + cost_beta * d_conf;
+            double d_type = fabs(X[i].type - dets[dets_indices[j]].type);
+            costMatrix(i, j) = d_euclid + cost_alpha * d_type;
             if (costMatrix(i, j) > max_value && costMatrix(i, j) != INF)
                 max_value = costMatrix(i, j);
         }

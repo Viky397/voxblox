@@ -60,7 +60,7 @@ class Object {
     Eigen::MatrixXd y_prev = Eigen::MatrixXd::Zero(3, 1);
     float w = 0, l = 0, h = 0, yaw = 0;                     /*!< Shape of the (3D) bounding box, yaw = orient about z */
     int type = 0;                                           /*!< Which state is the object most likely in */
-    float confidence = 1.0;                                 /*!< Confidence level for the object: \f$\in [0, 1] \f$ */
+    float confidence = 0.0;                                 /*!< Confidence level for the object: \f$\in [0, 1] \f$ */
     int ID = 0;                                             /*!< A unique identifier for each object */
     int filter_length = 5;                                  /*!< Only used for detecting flashing red lights. */
     std::deque<int> past_types;                             /*!< Only used for detecting flashing red lights. */
@@ -122,6 +122,22 @@ class Object {
 
     Pose2 getPose2() {
     	return Pose2(x_hat(0, 0), x_hat(1, 0), 0);
+    }
+
+    void initPrior() {
+    	if (type == 0) {
+    		// low dynamic
+    		a = 3.5;
+    		b = 2;
+    	} else if (type == 1) {
+    		a = 2;
+    		b = 2;
+    	} else if (type == 2) {
+    		// high dynamic
+    		a = 2;
+    		b = 3;
+    	}
+    	confidence = a / (a + b);
     }
 
     friend std::ostream &operator<<(std::ostream &output, const Object &O) {

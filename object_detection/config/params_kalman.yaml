@@ -11,7 +11,7 @@ one_d_kalman_gains: [0.50, 0.40, 0.42, 0.75, 0.3]   # Kw, Kl, Kh, Kyaw, Kconfide
 confidence_drop: 0.0    # How much should confidence drop over time c(t) = c(0) * exp(-1 * confidence_drop * t)
 metricGate: 0.6
 delete_time: 9999.0        # How many seconds to wait before deleting an object with no associated detections
-metric_thres: 1.0       # metric distance
+metric_thres: 0.7       # metric distance
 pedestrian_type: 1      # This type corresponds to a "pedestrian" object
 unknown_type: 3         # This type corresponds to an "unknown" object
 unknown_dynamic_type: 4 # This type corresponds to an "unknown dynamic" object
@@ -19,15 +19,15 @@ unknown_dynamic_type: 4 # This type corresponds to an "unknown dynamic" object
 cost_alpha: 0.25
 cost_beta: 0.5
 # HiddenMarkovModel Parameters
-types: [1, 2, 3]           # [Pedestrian, Unknown Static, Unknown Dynamic]
+types: [0, 1, 2]           # [Pedestrian, Unknown Static, Unknown Dynamic]
 # p(z_t = i | z_{t-1} = j)
-A_hmm: [0.990, 0.10, 0.15,        # Transition Matrix (Columns must sum to one)
-        0.005, 0.75, 0.10,
-        0.005, 0.15, 0.75]
+A_hmm: [0.75, 0.10, 0.10,        # Transition Matrix (Columns must sum to one)
+        0.15, 0.75, 0.15,
+        0.10, 0.15, 0.75]
 # p(x_t = l | z_t = k)
-C_hmm: [0.950, 0.13, 0.13,       # Observation Matrix (Columns must sum to one)
-        0.025, 0.74, 0.17,
-        0.025, 0.13, 0.70]
+C_hmm: [0.80, 0.10, 0.10,       # Observation Matrix (Columns must sum to one)
+        0.10, 0.80, 0.10,
+        0.10, 0.10, 0.80]
 # initial p(z_0) guess
 pi_hmm: [0.325, 0.35, 0.325]
 # static/dynamic object confidences

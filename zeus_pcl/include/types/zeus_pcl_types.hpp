@@ -41,15 +41,17 @@ namespace zeus_pcl {
 class PointXYZ {
  public:
     float x, y, z;
-	int r, g, b;
+	int r, g, b, dynamicness;
     unsigned int c;
-    PointXYZ() {x = 0; y = 0; z = 0; r = 0; g = 0; b = 0; c = 0;}
-    PointXYZ(float x0, float y0, float z0, int r0, int g0, int b0) {
+    PointXYZ() {x = 0; y = 0; z = 0; r = 0; g = 0; b = 0; c = 0; dynamicness = 2;}
+    PointXYZ(float x0, float y0, float z0, int r0, int g0, int b0, int d0 = 2) {
     	x = x0; y = y0; z = z0; r = r0; g = g0; b = b0; c = RGBToInt(r,g,b);
+    	dynamicness = d0;
     }
-    PointXYZ(float x0, float y0, float z0, unsigned int c0) {
+    PointXYZ(float x0, float y0, float z0, unsigned int c0, int d0 = 2) {
         x = x0; y = y0; z = z0; c = c0;
         IntToRGB(c, r, g, b);
+        dynamicness = d0;
     }
     // array-type accesor
     float operator [] (int i) const {
@@ -65,8 +67,10 @@ class PointXYZ {
             return g;
         else if (i == 5)
             return b;
-        else
+        else if (i == 6)
             return c;
+        else
+        	return dynamicness;
     }
     // operations
     float dot(const PointXYZ P) const {
@@ -97,7 +101,7 @@ class PointXYZ {
         return this->x == p.x && this->y == p.y && this->z == p.z;
     }
     friend std::ostream &operator << (std::ostream &os, const PointXYZ &p) {
-        os << p.x << " " << p.y << " " << p.z << " " << p.r << " " << p.g << " " << p.b << " " << p.c;
+        os << p.x << " " << p.y << " " << p.z << " " << p.r << " " << p.g << " " << p.b << " " << p.c << " " << p.dynamicness;
         return os;
     }
 };

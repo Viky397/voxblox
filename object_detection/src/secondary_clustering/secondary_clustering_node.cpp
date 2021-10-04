@@ -6,6 +6,7 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 #include "utils/zeus_pcl.hpp"
 #include "utils/line_of_sight_filter.hpp"
+#include "utils/planar_filter.hpp"
 
 zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& scan, const Eigen::Matrix4d& T_oc) {
 	zeus_msgs::Detections3D outputDetections;
@@ -23,11 +24,23 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
 	sor.setStddevMulThresh(0.3);
 	sor.filter(*filtered_scan);
 
+	kalman::PlanarFilter planar_filter;
+	std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> planes;
+	planar_filter.filter(filtered_scan, planes);
+	std::cout << "[JQ9] Number of planes found: " << planes.size() << std::endl;
+	for (size_t pi(0); pi<planes.size(); pi++) {
+		std::cout << "[JQ9]   Number of pts: " << planes[pi]->size() << std::endl;
+	}
+
+
 	sensor_msgs::PointCloud2 gp_prior_msg;
 
     zeus_pcl::PointCloudPtr pc(new zeus_pcl::PointCloud());
+
+    pc = zeus_pcl::filterAndCombinePlanes(planes, color_);
+
     zeus_pcl::PointCloudPtr gp_prior(new zeus_pcl::PointCloud());
-    zeus_pcl::fromPCLRGB(*filtered_scan, pc);
+    //zeus_pcl::fromPCLRGB(*filtered_scan, pc);
 
     Eigen::Matrix4d C_oc = Eigen::Matrix4d::Identity();
     Eigen::Matrix4d r_oc_xy = Eigen::Matrix4d::Identity();
@@ -41,12 +54,21 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
     r_oc_xy.block<2,1>(0,3) = T_oc.block<2,1>(0,3);
     zeus_pcl::transform_cloud(gp_prior, r_oc_xy);
 
+    zeus_pcl::PointCloudPtr pcd0(new zeus_pcl::PointCloud());
+    zeus_pcl::PointCloudPtr pcd1(new zeus_pcl::PointCloud());
+    zeus_pcl::PointCloudPtr pcd2(new zeus_pcl::PointCloud());
+    std::vector<zeus_pcl::PointCloudPtr> pcds{pcd0,pcd1,pcd2};
+    zeus_pcl::divideByDynamicness(gp_prior, pcds, color_);
+
+
     pcl_conversions::fromPCL(scan->header, outputDetections.header);
     outputDetections.header.frame_id = "map";
     outputDetections.camera = 1;
     outputDetections.bbs.clear();
     // Secondary Clustering
-    secondary_clustering(gp_prior, outputDetections);
+    for (int type(0); type<pcds.size(); type++) {
+    	secondary_clustering(pcds[type], outputDetections, type);
+    }
     // Publish ROS Message
     // det_pub_.publish(outputDetections);
 
@@ -83,7 +105,7 @@ void SecondaryClusteringNode::initialize_transforms() {
 }
 
 void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,
-    zeus_msgs::Detections3D &outputDetections) {
+    zeus_msgs::Detections3D &outputDetections, int type) {
     std::vector<std::vector<int>> clusters;
     if (pc->size() > 0) {
         zeus_pcl::cluster_point_cloud(pc, min_samples, cluster_tolerance, clusters);
@@ -112,10 +134,10 @@ void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,
         detection.w = bbox.at(4);
         detection.h = bbox.at(5);
         detection.yaw = bbox.at(6);
-        detection.type = 1;
-        detection.confidence = 0.85;
+        detection.type = type;
+        detection.confidence = 1.0;
         detection.camera = 1;
 
-        outputDetections.bbs.push_back(detection);
+        if (detection.l > 0.2 && detection.w > 0.0 && detection.h > 0.3) outputDetections.bbs.push_back(detection);
     }
 }

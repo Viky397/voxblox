@@ -71,7 +71,7 @@ public:
         return true;
     }
 
-    std::string GetSemanticLabelFromRGB(int r, int g, int b) {
+    std::string getSemanticLabelFromRGB(int r, int g, int b) {
         unsigned int rgb = RGBToInt(r,g,b);
         auto iter = std::find(RGB.begin(), RGB.end(), rgb);
         if(iter!=RGB.end())
@@ -83,7 +83,7 @@ public:
         return "";
     }
 
-    std::string GetDynamicNessFromLabel(const std::string& str_label) {
+    std::string getDynamicNessFromLabel(const std::string& str_label) {
         auto iter = std::find(Labels.begin(), Labels.end(), str_label);
         if(iter!=Labels.end())
         {
@@ -94,16 +94,19 @@ public:
         return "";
     }
 
-    double GetDynamicValue(const std::string& str_dynamic_ness) {
+    int getDynamicValue(const std::string& str_dynamic_ness) {
         if(str_dynamic_ness == "high")
-            return 1.0;
+            return 2;
         else if(str_dynamic_ness == "medium")
-            return 0.5;
+            return 1;
         else if(str_dynamic_ness == "low")
-            return 0.1;
+            return 0;
         else
-            std::cout << "Invalid dynamic-ness entry!" << std::endl;
-            return -1;
+            throw std::runtime_error("Invalid Dynamic Type: " + str_dynamic_ness);
+    }
+
+    int getDynamicTypeFromRGB(int r, int g, int b) {
+    	return getDynamicValue(getDynamicNessFromLabel(getSemanticLabelFromRGB(r,g,b)));
     }
 
     std::vector<std::string> OriLines;
