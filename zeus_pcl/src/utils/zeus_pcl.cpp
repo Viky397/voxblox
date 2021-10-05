@@ -383,9 +383,9 @@ std::vector<double> getBBox(const PointCloudPtr cluster_pts) {
 	bbox.at(0) = centroid(0, 0);
 	bbox.at(1) = centroid(1, 0);
 	bbox.at(2) = centroid(2, 0);
-	bbox.at(3) = max_x * 2 * 1.1;;
-	bbox.at(4) = max_y * 2 * 1.1;;
-	bbox.at(5) = max_z * 2 * 1.1;;
+	bbox.at(3) = max_x * 2 * 1.0;;
+	bbox.at(4) = max_y * 2 * 1.0;;
+	bbox.at(5) = max_z * 2 * 1.0;;
 	bbox.at(6) = yaw;
 
 	return bbox;

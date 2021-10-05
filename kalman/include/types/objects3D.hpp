@@ -140,6 +140,14 @@ class Object {
     	confidence = a / (a + b);
     }
 
+    double get2DArea() const {
+    	return l * w;
+    }
+
+    double get3DVolume() const {
+    	return l * w * h;
+    }
+
     friend std::ostream &operator<<(std::ostream &output, const Object &O) {
         output << "x: " << O.x_hat(0, 0) << " y: " << O.x_hat(1, 0) << " z: " << O.x_hat(2, 0) << " vx: " <<
             O.x_hat(3, 0) << " vy: " << O.x_hat(4, 0) << " ID: " << O.ID << " type: " << O.type << " conf: " <<

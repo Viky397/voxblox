@@ -86,7 +86,7 @@ class KalmanTracker {
    void setPointCloudRange(std::vector<double> point_cloud_range_) {point_cloud_range = point_cloud_range_;}
    void setConfidenceDrop(double confidence_drop_) {confidence_drop = confidence_drop_;}
    void setMetricGate(double metricGate_) {metricGate = metricGate_;}
-   void setIOUThes(double iou_thres_) {iou_thres = iou_thres_;}
+   void setIOAThres(double ioa_thres_) {ioa_thres = ioa_thres_;}
    void setMetricThres(double metric_thres_) {metric_thres = metric_thres_;}
    void setDeleteTime(double delete_time_) {delete_time = delete_time_; delete_time_unknown = delete_time; }
    void setCostParameters(double alpha, double beta) {cost_alpha = alpha; cost_beta = beta;}
@@ -160,16 +160,6 @@ class KalmanTracker {
    void prune(Eigen::Matrix4f robot_pose, bool prune_by_confidence);
 
    /*!
-      \brief This method prunes object tracks that overlap when projected onto the image plane.
-
-      The iou_thres parameter is used to determine if a track will be pruned. Higher confidence track is kept.
-
-      \param Tco Transformation from the static world frame to the sensor frame.
-      \param CAM Camera projection matrix. Ex: [fx, 0, cx, 0; 0, fy, cy, 0; 0, 0, 1, 0; 0, 0, 0, 1]
-   */
-   void prune_2d_overlap(Eigen::Matrix4d Tco, Eigen::MatrixXd CAM);
-
-   /*!
       \brief Retrieve the current vector of objects being tracked.
    */
    const std::vector<Object>& get_object_list();
@@ -180,6 +170,8 @@ class KalmanTracker {
       \brief This method prints the current list of objects being tracked.
    */
    void print();
+
+   void drawBBs();
 
    /*!
       \brief This method checks whether the desired ID is in the current object list.
@@ -246,7 +238,7 @@ class KalmanTracker {
     /*!< xmin, xmax, ymin, ymax, zmin, zmax */
     double confidence_drop = 0.12;
     double metricGate = 1.2;            /*!< Euclidean distance gate for data association */
-    double iou_thres = 0.75;             /*!< 2D intersection over union distance threshold for pruning */
+    double ioa_thres = 0.75;             /*!< 2D intersection over union distance threshold for pruning */
     double metric_thres = 0.5;          /*!< Euclidean distance threshold for pruning */
     float delete_time = 0.5;            /*!< If an object is unobserved for this long, it will be deleted */
     float delete_time_unknown = 0.5;
@@ -322,14 +314,14 @@ class KalmanTracker {
     void optimalAssociationSM(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int>& indices,
             std::vector<int>& notassoc, double current_time);
 
-    bool boxSizeSimilarToPed(const Object& obj);
-    bool boxSizeSimilarToPed(const zeus_msgs::BoundingBox3D& obj);
-
     Eigen::Matrix4f matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target, int max_iter=10);
 
     float norm(Eigen::Matrix4f p) {
     	return sqrt(pow(p(0,3), 2) + pow(p(1,3), 2) + pow(p(2,3), 2));
     }
+
 };
+
+static double calculate_intersection_rotated(const Object& obj_a, const Object& obj_b);
 
 }  // namespace kalman

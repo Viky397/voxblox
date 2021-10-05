@@ -9,6 +9,9 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+
 #include "utils/kalman.hpp"
 #include "utils/transform_utils.hpp"
 #include "utils/association.hpp"
@@ -90,7 +93,7 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
     for (uint i = 0; i < X.size(); i++) {
         if (indices[i] >= 0) {
             if (is_object_tracker) {
-                std::vector<float> confidences(1, X[i].confidence);
+                std::vector<float> confidences(1, 0.8);
                 X[i].push_type(dets[indices[i]].type, confidences);
             }
 
@@ -230,28 +233,14 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
 void KalmanTracker::prune(Eigen::Matrix4f robot_pose, bool prune_by_confidence) {
 	std::vector<Object> Xout;
 	std::vector<int> delete_indices;
-    // First, prune objects outside the BEV
-    /*
-    for (uint i = 0; i < X.size(); i++) {
-        Eigen::MatrixXd xbar = Eigen::MatrixXd::Ones(4, 1);
-        xbar(0, 0) = X[i].x_hat(0, 0);
-        xbar(1, 0) = X[i].x_hat(1, 0);
-        xbar(2, 0) = X[i].x_hat(2, 0);
-        xbar = Tco * xbar;     // transform from world frame to c2
-        if (point_cloud_range[0] <= xbar(0, 0) && xbar(0, 0) <= point_cloud_range[1] &&
-            point_cloud_range[2] <= xbar(1, 0) && xbar(1, 0) <= point_cloud_range[3]) {
-            Xout.push_back(X[i]);
-        }
-    }
-    X = Xout;
-    */
+
     // Then prune objects that are too close to each other or overlap
     for (uint i = 0; i < X.size(); i++) {
         for (uint j = i + 1; j < X.size(); j++) {
-            double dMetric = dist(X[i].x_hat, X[j].x_hat);
-            if (dMetric < metric_thres) {
-                // Higher confidence tracks wins
-                if (X[i].confidence < X[j].confidence) {
+            double interArea = calculate_intersection_rotated(X[i], X[j]);
+            if ((interArea / X[i].get2DArea() > ioa_thres) || (interArea / X[j].get2DArea() > ioa_thres)) {
+                // bigger one wins
+                if (X[i].get2DArea() < X[j].get2DArea()) {
                     delete_indices.push_back(i);
                     X[j].mergeNewCloud(X[i].cloud);
                     X[j].is_observed = true;
@@ -298,6 +287,22 @@ static double calculate_iou(double x1, double y1, double x2, double y2, double x
     return iou;
 }
 
+static double calculate_intersection_rotated(const Object& obj_a, const Object& obj_b) {
+	std::vector<cv::Point2f> inter;
+	cv::RotatedRect rect_a(cv::Point2f(-obj_a.x_hat(1),-obj_a.x_hat(0)), cv::Size2f(obj_a.l,obj_a.w), obj_a.yaw/M_PI*180);
+	cv::RotatedRect rect_b(cv::Point2f(-obj_b.x_hat(1),-obj_b.x_hat(0)), cv::Size2f(obj_b.l,obj_b.w), obj_b.yaw/M_PI*180);
+	int res = cv::rotatedRectangleIntersection(rect_a, rect_b, inter);
+
+	if (inter.empty() || res == cv::INTERSECT_NONE)
+		return 0.0f;
+	if (res == cv::INTERSECT_FULL)
+		return std::min(obj_a.get2DArea(), obj_b.get2DArea());
+
+	float interArea = contourArea(inter);
+	//double iou = interArea / (rect_a.size.area() + rect_b.size.area() - interArea);
+	return interArea;
+}
+
 /*!
    \brief Converts 3D point xin (in odom frame) into 2D image plane location (u,v)
 */
@@ -341,33 +346,6 @@ static double distIOU(Eigen::VectorXd x, float wx, float hx, Eigen::VectorXd xde
     if (d < 0)
         d = 0.0;
     return d;
-}
-
-void KalmanTracker::prune_2d_overlap(Eigen::Matrix4d Tco, Eigen::MatrixXd CAM) {
-    std::vector<int> delete_indices;
-    for (uint i = 0; i < X.size(); i++) {
-        for (uint j = i + 1; j < X.size(); j++) {
-            double dIOU = distIOU(X[i].x_hat, X[i].w, X[i].h, X[j].x_hat, X[j].w, X[j].h, CAM, Tco);
-            double thres_iou = 1 - iou_thres;
-            if (thres_iou < 0)
-                thres_iou = 0.1;
-            if (dIOU < thres_iou) {
-                // Higher confidence tracks wins
-                if (X[i].confidence < X[j].confidence) {
-                    delete_indices.push_back(i);
-                } else {
-                    delete_indices.push_back(j);
-                }
-            }
-        }
-    }
-    std::vector<Object> Xout;
-    for (uint i = 0; i < X.size(); i++) {
-        if (!is_member(delete_indices, i)) {
-            Xout.push_back(X[i]);
-        }
-    }
-    X = Xout;
 }
 
 Object KalmanTracker::create_new(const zeus_msgs::BoundingBox3D &det, int &objectID, double current_time) {
@@ -530,8 +508,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrix(const std::vector<zeus_msgs::B
         x = A * x;
         for (uint j = 0; j < M; j++) {
             double d_euclid = dist(x, dets[dets_indices[j]]);
-            double mgate = (dets[dets_indices[j]].type == pedestrian_type ||
-                    dets[dets_indices[j]].type == unknown_dynamic_type) ?  1.5 * metricGate : metricGate;
+            double mgate = metricGate;
             if (d_euclid > mgate) {
                 costMatrix(i, j) = INF;
                 continue;
@@ -749,38 +726,25 @@ void KalmanTracker::optimalAssociationSM(const std::vector<zeus_msgs::BoundingBo
     }
 }
 
-bool KalmanTracker::boxSizeSimilarToPed(const Object &obj) {
-    bool inRangeLen = false;
-    bool inRangeWid = false;
-    bool inRangeHt = false;
-
-    if (obj.l >= ped_L[0] && obj.l <= ped_L[1]) {
-        inRangeLen = true;
-    }
-    if (obj.w >= ped_W[0] && obj.w <= ped_W[1]) {
-        inRangeWid = true;
-    }
-    if (obj.h >= ped_H[0] && obj.h <= ped_H[1]) {
-        inRangeHt = true;
-    }
-    return (inRangeLen && inRangeWid && inRangeHt);
-}
-
-bool KalmanTracker::boxSizeSimilarToPed(const zeus_msgs::BoundingBox3D &obj) {
-    bool inRangeLen = false;
-    bool inRangeWid = false;
-    bool inRangeHt = false;
-
-    if (obj.l >= ped_L[0] && obj.l <= ped_L[1]) {
-        inRangeLen = true;
-    }
-    if (obj.w >= ped_W[0] && obj.w <= ped_W[1]) {
-        inRangeWid = true;
-    }
-    if (obj.h >= ped_H[0] && obj.h <= ped_H[1]) {
-        inRangeHt = true;
-    }
-    return (inRangeLen && inRangeWid && inRangeHt);
+void KalmanTracker::drawBBs() {
+	cv::Mat image(1800, 1800, CV_8UC3, cv::Scalar(0));
+	for (const auto& obj : X) {
+		double x_coord = -obj.x_hat(0) * 100 + 1400;
+		double y_coord = -obj.x_hat(1) * 100 + 400;
+		cv::RotatedRect rect(cv::Point2f(y_coord,x_coord), cv::Size2f(obj.l*100,obj.w*100), obj.yaw/M_PI*180);
+		cv::Point2f v[4];
+		rect.points(v);
+		for (int i(0); i<4; i++){
+			if (obj.type == 0)
+				cv::line(image, v[i], v[(i+1)%4], cv::Scalar(0,255,0));
+			else if (obj.type == 1)
+				cv::line(image, v[i], v[(i+1)%4], cv::Scalar(0,150,150));
+			else if (obj.type == 2)
+				cv::line(image, v[i], v[(i+1)%4], cv::Scalar(0,0,255));
+		}
+	}
+	cv::imshow("BBs", image);
+	cv::waitKey(100);
 }
 
 }  // namespace kalman

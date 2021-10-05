@@ -57,7 +57,7 @@ void KalmanTrackerNode::init() {
 
 	kalmantracker = KalmanPtr(new kalman::KalmanTracker(A, C, Q, R, P0));
 	std::vector<double> one_d_kalman_gains, point_cloud_range;
-	double confidence_drop, metricGate, metric_thres, delete_time, cost_alpha,
+	double confidence_drop, metricGate, metric_thres, ioa_thres, delete_time, cost_alpha,
 			cost_beta;
 	int pedestrian_type, unknown_type, unknown_dynamic_type;
 	nh_.getParam(node_name + "/one_d_kalman_gains", one_d_kalman_gains);
@@ -65,6 +65,7 @@ void KalmanTrackerNode::init() {
 	nh_.getParam(node_name + "/confidence_drop", confidence_drop);
 	nh_.getParam(node_name + "/metricGate", metricGate);
 	nh_.getParam(node_name + "/metric_thres", metric_thres);
+	nh_.getParam(node_name + "/ioa_thres", ioa_thres);
 	nh_.getParam(node_name + "/delete_time", delete_time);
 	nh_.getParam(node_name + "/cost_alpha", cost_alpha);
 	nh_.getParam(node_name + "/cost_beta", cost_beta);
@@ -76,6 +77,7 @@ void KalmanTrackerNode::init() {
 	kalmantracker->setConfidenceDrop(confidence_drop);
 	kalmantracker->setMetricGate(metricGate);
 	kalmantracker->setMetricThres(metric_thres);
+	kalmantracker->setIOAThres(ioa_thres);
 	kalmantracker->setDeleteTime(delete_time);
 	kalmantracker->setCostParameters(cost_alpha, cost_beta);
 	kalmantracker->setPedestrianType(pedestrian_type);
@@ -128,6 +130,7 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	auto sm_results = kalmantracker->filter(dets, robot_pose);
 	//! Prune objects that are closer than metricGate to each other or objects outside point_cloud_range.
 	kalmantracker->prune(robot_pose, prune_by_confidence);
+	kalmantracker->drawBBs();
 	//! Publish ROS message:
 	zeus_msgs::Detections3D outputDetections;
 	outputDetections.header.stamp = det.header.stamp;
