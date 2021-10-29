@@ -34,13 +34,13 @@ CLUSTER_TOLERANCE: 0.06                 # how close do points need to be to clus
 secondary_cloud_range: [-50.0, 50.0, -50.0, 50.0, -0.5, 5.0] # xmin, xmax, ymin, ymax, zmin, zmax
 #secondary_ground_point_range: [-10.0, 10.0, -10, 10.0, 100, 101.0]
 secondary_ground_point_range: [-50.0, 50.0, -50, 50.0, 0.1, 5.0]
-secondary_max_object_size: [0.6, 0.6, 0.6]
-secondary_min_object_size: [0.01, 0.01, 0.01]
+secondary_max_object_size: [8.0, 8.0, 8.0]
+secondary_min_object_size: [0.3, 0.3, 0.3]
 secondary_randomDownSampleThreshold: 0.5
 secondary_doRandomDownsample: false
 secondary_min_object_z: -1.0
 secondary_max_object_z: 2.0
-MIN_SAMPLES_SECONDARY: 30               # a diff number of points used for secondary clustering
+MIN_SAMPLES_SECONDARY: 10               # a diff number of points used for secondary clustering
 CLUSTER_TOLERANCE_SECONDARY: 0.15
 unknown_type: 3
 # Filtering Clusters:
