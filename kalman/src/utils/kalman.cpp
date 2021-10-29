@@ -731,7 +731,6 @@ void KalmanTracker::optimalAssociationSM(const std::vector<zeus_msgs::BoundingBo
 
 void KalmanTracker::drawBBs() {
 	cv::Mat image(1800, 1800, CV_8UC3, cv::Scalar(0));
-	std::vector<cv::RotatedRect> rects;
 	double scale = 500; // 100
 	double x_shift = 0; // 1400
 	double y_shift = 0; //400
@@ -749,20 +748,9 @@ void KalmanTracker::drawBBs() {
 			else if (obj.type == 2)
 				cv::line(image, v[i], v[(i+1)%4], cv::Scalar(0,0,255));
 		}
-		rects.push_back(rect);
 	}
 	cv::imshow("BBs", image);
 	cv::waitKey(100);
-	/*
-	for (size_t i(0); i<X.size(); i++) {
-		for (size_t j(i+1); j<X.size(); j++) {
-			double interArea = calculate_intersection_rectangle_rotated(rects[i], rects[j]);
-			if ((interArea / rects[i].size.area() > ioa_thres) || (interArea / rects[j].size.area() > ioa_thres)) {
-				std::cout << "[JQ10] Plotting intersect bw objects " << X[i].ID << " and " << X[j].ID << std::endl;
-			}
-		}
-	}
-	*/
 }
 
 }  // namespace kalman

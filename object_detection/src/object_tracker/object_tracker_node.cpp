@@ -129,7 +129,7 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	//! Linear Kalman filter update
 	auto sm_results = kalmantracker->filter(dets, robot_pose);
 	//! Prune objects that are closer than metricGate to each other or objects outside point_cloud_range.
-	//kalmantracker->drawBBs();
+	// kalmantracker->drawBBs();
 	kalmantracker->prune(robot_pose, prune_by_confidence);
 
 	//! Publish ROS message:

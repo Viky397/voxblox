@@ -152,26 +152,18 @@ void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,
 }
 
 void SecondaryClusteringNode::MergeBoxes(zeus_msgs::Detections3D &dets, size_t target, size_t source) {
-	std::cout << "[JQ10]    NMS merging " << source << " to " << target << std::endl;
-
 	zeus_pcl::PointCloudPtr target_pts = pcl_pcds.at(target);
 	zeus_pcl::PointCloudPtr source_pts = pcl_pcds.at(source);
 	zeus_pcl::PointCloudPtr merged_pts(new zeus_pcl::PointCloud());
 
-	std::cout << "[JQ10]    	Source size " << source_pts->size() << std::endl;
-	std::cout << "[JQ10]    	Target size " << target_pts->size() << std::endl;
-
 	zeus_pcl::applyDynamicness(source_pts, target_pts->points.front().dynamicness);
-
 	zeus_pcl::append(merged_pts, target_pts);
 	zeus_pcl::append(merged_pts, source_pts);
-	std::cout << "[JQ10]    	Merged size " << merged_pts->size() << std::endl;
 
 	sensor_msgs::PointCloud2 merged_pcd_msg;
 	zeus_pcl::toROSMsg(merged_pts, merged_pcd_msg, "map");
 
 	//zeus_pcl::randomDownSample(merged_pts, max(target_pts->size()/merged_pts->size(), source_pts->size()/merged_pts->size()));
-	//std::cout << "[JQ10]    	Merged downsampled size " << merged_pts->size() << std::endl;
 	auto bbox = zeus_pcl::getBBox(merged_pts);
 
 	dets.bbs[target].x = bbox.at(0);
@@ -202,7 +194,7 @@ void SecondaryClusteringNode::NMSBoxes(zeus_msgs::Detections3D &dets) {
 			double inter_a_ij = kalman::calculate_intersection_rotated(box_i.x, box_i.y, box_i.l, box_i.w, box_i.yaw,
 					box_j.x, box_j.y, box_j.l, box_j.w, box_j.yaw);
 			double inter_p_ij = max(inter_a_ij/area_i, inter_a_ij/area_j);
-			if (inter_p_ij > 0.7) {
+			if (inter_p_ij > 0.5) {
 				if (area_i > area_j) {
 					MergeBoxes(dets, i, j);
 					merged[j] = 1;

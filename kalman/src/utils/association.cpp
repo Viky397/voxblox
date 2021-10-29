@@ -350,7 +350,8 @@ double calculate_intersection_rotated(const Object& obj_a, const Object& obj_b) 
 */
 
 double calculate_intersection_rotated(const Object& obj_a, const Object& obj_b) {
-	return calculate_intersection_rotated(obj_a.x_hat(0),obj_a.x_hat(1),obj_a.l,obj_a.w,obj_a.yaw,
+	return calculate_intersection_rotated(
+			obj_a.x_hat(0),obj_a.x_hat(1),obj_a.l,obj_a.w,obj_a.yaw,
 			obj_b.x_hat(0),obj_b.x_hat(1),obj_b.l,obj_b.w,obj_b.yaw);
 }
 
