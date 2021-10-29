@@ -3,6 +3,9 @@ project(object_detection)
 include("./config.cmake")
 add_compile_options(-std=c++11)
 
+set(CMAKE_CFG_PATH ${CMAKE_CURRENT_LIST_DIR}/../../Kimera-Semantics/kimera_semantics_ros/cfg)
+add_definitions(-DCFG_PATH="${CMAKE_CFG_PATH}")
+
 find_package(catkin REQUIRED COMPONENTS
   message_generation
   roscpp
