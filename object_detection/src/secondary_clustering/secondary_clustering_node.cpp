@@ -7,14 +7,19 @@
 #include "utils/zeus_pcl.hpp"
 #include "utils/line_of_sight_filter.hpp"
 #include "utils/planar_filter.hpp"
+#include "utils/association.hpp"
 
 zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& scan, const Eigen::Matrix4d& T_oc) {
+	std::lock_guard<std::mutex> lock(pcd_mtx);
+
 	zeus_msgs::Detections3D outputDetections;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_scan_los(new pcl::PointCloud<pcl::PointXYZRGB>);
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_scan(new pcl::PointCloud<pcl::PointXYZRGB>);
 
+	pcl_pcds.clear();
+
 	bool vis_normal = false;
-	kalman::LOSFilter los_filter(75);
+	kalman::LOSFilter los_filter(85);
 	auto normal_msg = los_filter.filter(scan, filtered_scan_los, vis_normal);
 	if (vis_normal) normal_line_pub_.publish(normal_msg);
 
@@ -69,6 +74,7 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
     for (int type(0); type<pcds.size(); type++) {
     	secondary_clustering(pcds[type], outputDetections, type);
     }
+    NMSBoxes(outputDetections);
     // Publish ROS Message
     // det_pub_.publish(outputDetections);
 
@@ -138,6 +144,80 @@ void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,
         detection.confidence = 1.0;
         detection.camera = 1;
 
-        if (detection.l > 0.2 && detection.w > 0.0 && detection.h > 0.3) outputDetections.bbs.push_back(detection);
+        if (detection.l > 0.2 && detection.w > 0.0 && detection.h > 0.3) {
+        	outputDetections.bbs.push_back(detection);
+        	pcl_pcds.push_back(cluster_pts);
+        }
     }
+}
+
+void SecondaryClusteringNode::MergeBoxes(zeus_msgs::Detections3D &dets, size_t target, size_t source) {
+	std::cout << "[JQ10]    NMS merging " << source << " to " << target << std::endl;
+
+	zeus_pcl::PointCloudPtr target_pts = pcl_pcds.at(target);
+	zeus_pcl::PointCloudPtr source_pts = pcl_pcds.at(source);
+	zeus_pcl::PointCloudPtr merged_pts(new zeus_pcl::PointCloud());
+
+	std::cout << "[JQ10]    	Source size " << source_pts->size() << std::endl;
+	std::cout << "[JQ10]    	Target size " << target_pts->size() << std::endl;
+
+	zeus_pcl::applyDynamicness(source_pts, target_pts->points.front().dynamicness);
+
+	zeus_pcl::append(merged_pts, target_pts);
+	zeus_pcl::append(merged_pts, source_pts);
+	std::cout << "[JQ10]    	Merged size " << merged_pts->size() << std::endl;
+
+	sensor_msgs::PointCloud2 merged_pcd_msg;
+	zeus_pcl::toROSMsg(merged_pts, merged_pcd_msg, "map");
+
+	//zeus_pcl::randomDownSample(merged_pts, max(target_pts->size()/merged_pts->size(), source_pts->size()/merged_pts->size()));
+	//std::cout << "[JQ10]    	Merged downsampled size " << merged_pts->size() << std::endl;
+	auto bbox = zeus_pcl::getBBox(merged_pts);
+
+	dets.bbs[target].x = bbox.at(0);
+	dets.bbs[target].y = bbox.at(1);
+	dets.bbs[target].z = bbox.at(2);
+	dets.bbs[target].l = bbox.at(3);
+	dets.bbs[target].w = bbox.at(4);
+	dets.bbs[target].h = bbox.at(5);
+	dets.bbs[target].yaw = bbox.at(6);
+	dets.bbs[target].cloud = merged_pcd_msg;
+}
+
+void SecondaryClusteringNode::NMSBoxes(zeus_msgs::Detections3D &dets) {
+	std::cout << "[JQ10] Dets before NMS " << dets.bbs.size() << std::endl;
+	std::vector<int> merged(dets.bbs.size(), 0);
+
+	for (size_t i(0); i<dets.bbs.size(); i++) {
+		for (size_t j(0); j<dets.bbs.size(); j++) {
+			if (i == j) continue;
+			if (merged[i]+merged[j] > 0) continue;
+			if (pcl_pcds[i]->points.empty() || pcl_pcds[j]->points.empty()) continue;
+
+			zeus_msgs::BoundingBox3D& box_i = dets.bbs[i];
+			double area_i = box_i.l * box_i.w;
+			zeus_msgs::BoundingBox3D& box_j = dets.bbs[j];
+			double area_j = box_j.l * box_j.w;
+
+			double inter_a_ij = kalman::calculate_intersection_rotated(box_i.x, box_i.y, box_i.l, box_i.w, box_i.yaw,
+					box_j.x, box_j.y, box_j.l, box_j.w, box_j.yaw);
+			double inter_p_ij = max(inter_a_ij/area_i, inter_a_ij/area_j);
+			if (inter_p_ij > 0.7) {
+				if (area_i > area_j) {
+					MergeBoxes(dets, i, j);
+					merged[j] = 1;
+				} else {
+					MergeBoxes(dets, j, i);
+					merged[i] = 1;
+				}
+			}
+		}
+	}
+
+	std::vector<zeus_msgs::BoundingBox3D> filtered_bbs;
+	for (size_t i(0); i<dets.bbs.size(); i++) {
+		if (merged[i] == 0) filtered_bbs.push_back(dets.bbs[i]);
+	}
+	dets.bbs = filtered_bbs;
+	std::cout << "[JQ10] Dets after NMS " << dets.bbs.size() << std::endl;
 }

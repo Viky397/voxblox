@@ -20,6 +20,260 @@
 
 namespace kalman {
 
+class Alignment2{
+public:
+	Alignment2()
+	{
+		confidence = 0.0001;
+		max_iter = 100;
+		far_dist = 100000;
+		outlier_dist = 2.0;
+		inlier_thre = 0.075;
+		Pose_ini.setIdentity();
+		Pose_final.setIdentity();
+
+		pointCloudSource = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+		pointCloudTarget = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+	}
+
+
+	// require surface normal estimation, using nearst K neighbors for computation
+	Eigen::Matrix4f align_point2plane(float ne_nearest_K)
+	{
+		removeFarPoints(pointCloudSource);
+		removeFarPoints(pointCloudTarget);
+		pcl::transformPointCloud(*pointCloudSource, *pointCloudSource, Pose_ini);
+
+
+		pcl::PointCloud<pcl::PointNormal>::Ptr target_PointNormal(new pcl::PointCloud<pcl::PointNormal>);
+		pcl::PointCloud<pcl::PointNormal>::Ptr source_PointNormal(new pcl::PointCloud<pcl::PointNormal>);
+		normal_estmation(pointCloudSource, source_PointNormal);
+		normal_estmation(pointCloudTarget, target_PointNormal);
+
+		//pcl::visualization::PCLVisualizer  viewer("Cloud Viewer");
+		//pcl::visualization::PointCloudColorHandlerCustom<pcl::PointNormal> sc2(target_PointNormal, 0, 0, 255);
+		//viewer.addPointCloud<pcl::PointNormal>(target_PointNormal, sc2, "2");
+		//viewer.addPointCloudNormals<pcl::PointNormal, pcl::PointNormal>(target_PointNormal, target_PointNormal, 1, 0.1, "normals");
+		//while (!viewer.wasStopped())
+		//{
+		//	viewer.spinOnce();
+		//}
+
+
+
+		pcl::registration::TransformationEstimation<pcl::PointNormal, pcl::PointNormal, float>::Ptr
+			te(new pcl::registration::TransformationEstimationPointToPlane<pcl::PointNormal, pcl::PointNormal, float>);
+		pcl::PointCloud<pcl::PointNormal> pcd_refine;
+		pcl::IterativeClosestPoint<pcl::PointNormal, pcl::PointNormal> icp;
+		icp.setInputTarget(target_PointNormal);
+		icp.setInputSource(source_PointNormal);
+		icp.setTransformationEstimation(te);
+		icp.setMaxCorrespondenceDistance(outlier_dist);
+		icp.setMaximumIterations(max_iter);
+		icp.setUseReciprocalCorrespondences(true);
+		icp.align(pcd_refine);
+
+		Pose_final = icp.getFinalTransformation() * Pose_ini;
+
+		//confidence = icp.getFitnessScore();
+		confidence = computeConfidence();
+
+		source_PointNormal->clear();
+		target_PointNormal->clear();
+		pointCloudSource->clear();
+		pointCloudTarget->clear();
+
+		return Pose_final;
+	}
+
+
+	float computeConfidence()
+	{
+
+		if (pcl_isinf(Pose_final.data()[0]))
+		{
+			return 0.0001;
+		}
+
+
+		pcl::PointCloud<pcl::PointXYZ> pointCloudRefine;
+		pcl::transformPointCloud(*pointCloudSource, pointCloudRefine, Pose_final);
+
+		pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+		kdtree.setInputCloud(pointCloudTarget);
+		std::vector<int> pointIdxNKNSearch(1);
+		std::vector<float> pointNKNSquaredDistance(1);
+
+		float total_num = pointCloudRefine.size();
+		if (total_num == 0)
+		{
+			return confidence;
+		}
+
+
+		float inlier_num = 0;
+		for (int i = 0; i < pointCloudRefine.size(); i++)
+		{
+			kdtree.nearestKSearch(pointCloudRefine.at(i), 1, pointIdxNKNSearch, pointNKNSquaredDistance);
+			float dist_i = sqrt(pointNKNSquaredDistance[0]);
+
+			if (dist_i < inlier_thre)
+			{
+				inlier_num += 1;
+			}
+		}
+		float inlier_ratio = inlier_num / total_num;
+
+		if (inlier_ratio < 1)
+		{
+			inlier_ratio += 0.0001;
+		}
+
+
+		return inlier_ratio;
+	}
+
+	float getConfidence()
+	{
+		return confidence;
+	}
+
+	Eigen::Matrix4f align_point2point()
+	{
+		removeFarPoints(pointCloudSource);
+		removeFarPoints(pointCloudTarget);
+		pcl::transformPointCloud(*pointCloudSource, *pointCloudSource, Pose_ini);
+
+		//pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudSource2D(new pcl::PointCloud<pcl::PointXYZ>);
+		//pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudTarget2D(new pcl::PointCloud<pcl::PointXYZ>);
+		//setZtoZero(*pointCloudSource, *pointCloudSource2D);
+		//setZtoZero(*pointCloudTarget, *pointCloudTarget2D);
+
+		pcl::PointCloud<pcl::PointXYZ> pcd_refine;
+		pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+		icp.setInputTarget(pointCloudTarget);
+		icp.setInputSource(pointCloudSource);
+		icp.setMaxCorrespondenceDistance(outlier_dist);
+		icp.setMaximumIterations(max_iter);
+		//icp.setUseReciprocalCorrespondences(true);
+		icp.align(pcd_refine);
+
+		Pose_final = icp.getFinalTransformation() * Pose_ini;
+
+		confidence = computeConfidence();
+
+		pointCloudSource->clear();
+		pointCloudTarget->clear();
+		//pointCloudSource2D->clear();
+		//pointCloudTarget2D->clear();
+
+		return Pose_final;
+	}
+
+	//Eigen::Matrix4f align_point2plane();
+
+	void setSourcePointCloud(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd_source)
+	{
+		for (int i = 0; i < pcd_source->size(); i++)
+		{
+			pcl::PointXYZ pt;
+			pt.x = pcd_source->at(i).x;
+			pt.y = pcd_source->at(i).y;
+			pt.z = pcd_source->at(i).z;
+			pointCloudSource->push_back(pt);
+		}
+	}
+
+	void setTargetPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd_target)
+	{
+		for (int i = 0; i < pcd_target->size(); i++)
+		{
+			pcl::PointXYZ pt;
+			pt.x = pcd_target->at(i).x;
+			pt.y = pcd_target->at(i).y;
+			pt.z = pcd_target->at(i).z;
+			pointCloudTarget->push_back(pt);
+		}
+	}
+
+	void setSourceInitialPose(const Eigen::Matrix4f& Pose_ini_)
+	{
+		Pose_ini = Pose_ini_;
+	}
+
+	void setOutlierRejectionDist(float dist_)
+	{
+		outlier_dist = dist_;
+	}
+
+	void setFarDist(float dist_)
+	{
+		far_dist = dist_;
+	}
+
+	void setMaxIter(float iter)
+	{
+		max_iter = iter;
+	}
+
+private:
+
+	void setZtoZero(const pcl::PointCloud<pcl::PointXYZ>& pcd_in, pcl::PointCloud<pcl::PointXYZ> &pcd_out)
+	{
+		pcd_out.clear();
+		for (int i = 0; i < pcd_in.size(); i++)
+		{
+			pcl::PointXYZ pt = pcd_in.at(i);
+			pt.z = 0;
+			pcd_out.push_back(pt);
+		}
+	}
+
+	void removeFarPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr pcd)
+	{
+		pcl::PointCloud<pcl::PointXYZ> pcd_tmp;
+		for (int i = 0; i < pcd->size(); i++)
+		{
+			pcl::PointXYZ pt = pcd->at(i);
+
+			if (pcl_isinf(pcd->at(i).x) || pcl_isinf(pcd->at(i).y) || pcl_isinf(pcd->at(i).z))
+			{
+				continue;
+			}
+			if (pcd->at(i).z > far_dist)
+			{
+				continue;
+			}
+			pcd_tmp.push_back(pt);
+		}
+		pcd->clear();
+		for (int i = 0; i < pcd_tmp.size(); i++)
+		{
+			pcl::PointXYZ pt = pcd_tmp[i];
+			pcd->push_back(pt);
+		}
+	}
+
+	void normal_estmation(pcl::PointCloud<pcl::PointXYZ>::Ptr pcd, pcl::PointCloud<pcl::PointNormal>::Ptr output_PointNormal)
+	{
+		NormEstimator normal_estimator;
+		normal_estimator.estimate(pcd, output_PointNormal, 50, true);
+	}
+
+
+	Eigen::Matrix4f Pose_final;
+	Eigen::Matrix4f Pose_ini;
+	float outlier_dist;
+	float far_dist;
+	int max_iter;
+	float confidence;
+	float inlier_thre;
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudSource;
+	pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudTarget;
+
+};
+
 class Alignment{
 public:
 	Alignment()

@@ -71,12 +71,15 @@ void fromROSMsg(const sensor_msgs::PointCloud2ConstPtr& ros_msg, IPointCloudPtr 
 */
 void toROSMsg(PointCloudPtr pc, sensor_msgs::PointCloud2& msg, std::string frame="");
 
-
 void applyDynamicness(PointCloudPtr cloudIn, std::shared_ptr<Color> color);
 
-void divideByDynamicness(PointCloudPtr cloudIn, std::vector<PointCloudPtr>& cloudsOut, std::shared_ptr<Color> color);
+void applyDynamicness(PointCloudPtr cloudIn, int type);
+
+void divideByDynamicness(const PointCloudPtr cloudIn, std::vector<PointCloudPtr>& cloudsOut, std::shared_ptr<Color> color);
 
 PointCloudPtr filterAndCombinePlanes(const std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& pcl_planes, std::shared_ptr<Color> color);
+
+void append(PointCloudPtr cloud_a, PointCloudPtr cloud_b);
 /*!
    \brief Sort bounding boxes in descending order of size (size = width * height).
 */

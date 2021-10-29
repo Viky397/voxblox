@@ -35,6 +35,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+
 #include "types/objects3D.hpp"
 #include "types/Pose2.hpp"
 
@@ -133,7 +134,8 @@ class KalmanTracker {
       \param Toc Transformation from the sensor frame to the static world frame (odom). We use this to track objects
         in a static world frame. Setting this matrix to identity enables tracking within the sensor frame.
    */
-   void association(const std::vector<zeus_msgs::BoundingBox3D>& dets, Eigen::Matrix4f robot_pose);
+   void association(
+		   const std::vector<zeus_msgs::BoundingBox3D>& dets, Eigen::Matrix4f robot_pose);
 
    /*!
       \brief This method performs the kalman filtering update step, incorporating new measurements.
@@ -149,6 +151,8 @@ class KalmanTracker {
         in a static world frame. Setting this matrix to identity enables tracking within the sensor frame.
    */
    std::vector<pcl::PointCloud<pcl::PointXYZRGB> > filter(std::vector<zeus_msgs::BoundingBox3D> &dets, Eigen::Matrix4f robot_pose);
+
+   void mergeObservation(int ID);
 
    /*!
       \brief This method prunes object tracks that are within metricGate of each other. Higher confidence track is kept.
@@ -269,6 +273,8 @@ class KalmanTracker {
     std::vector<double> ped_W;
     std::vector<double> ped_H;
 
+    std::map<std::pair<int, int>, Eigen::Matrix4f> sc_tfs;
+
     /*!
        \brief This method creates a new object based on the given detection.
        \param det this is the detection that will be turned into a new object
@@ -314,14 +320,13 @@ class KalmanTracker {
     void optimalAssociationSM(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int>& indices,
             std::vector<int>& notassoc, double current_time);
 
-    Eigen::Matrix4f matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target, int max_iter=10);
+    float matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target,
+    		int max_iter, Eigen::Matrix4f& final_pose);
 
     float norm(Eigen::Matrix4f p) {
-    	return sqrt(pow(p(0,3), 2) + pow(p(1,3), 2) + pow(p(2,3), 2));
+    	return sqrt(pow(p(0,3), 2) + pow(p(1,3), 2));
     }
 
 };
-
-static double calculate_intersection_rotated(const Object& obj_a, const Object& obj_b);
 
 }  // namespace kalman

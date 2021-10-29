@@ -129,8 +129,9 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 	//! Linear Kalman filter update
 	auto sm_results = kalmantracker->filter(dets, robot_pose);
 	//! Prune objects that are closer than metricGate to each other or objects outside point_cloud_range.
+	//kalmantracker->drawBBs();
 	kalmantracker->prune(robot_pose, prune_by_confidence);
-	kalmantracker->drawBBs();
+
 	//! Publish ROS message:
 	zeus_msgs::Detections3D outputDetections;
 	outputDetections.header.stamp = det.header.stamp;
@@ -179,7 +180,21 @@ void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurement
 		if (id_idx_lut.count(pair.first) == 0) {
 			throw std::runtime_error("ERROR: Object index not found!");
 		}
-		objects.at(id_idx_lut.at(pair.first)).updateProbability(pair.second, std);
+		auto& obj = objects.at(id_idx_lut.at(pair.first));
+		obj.updateProbability(pair.second, std);
+
+		std::cout << "[JQ10] Object " << obj.ID <<  " gets change of " << fabs(pair.second) << std::endl;
+		if (fabs(pair.second) < 3 * std) {
+			auto bbox = obj.mergeNewCloud(obj.new_obs);
+			std::cout << "[JQ10]    merge in observation" << std::endl;
+			obj.x_hat(0, 0) = bbox[0];
+			obj.x_hat(1, 0) = bbox[1];
+			obj.x_hat(2, 0) = bbox[2];
+			obj.l = bbox[3];
+			obj.w = bbox[4];
+			obj.h = bbox[5];
+			obj.yaw = bbox[6];
+		}
 	}
 }
 
@@ -203,6 +218,7 @@ void convertToRosMessage(const std::vector<Object>& object_list,
 		detection.confidence = object_list[i].confidence;
 		detection.is_observed = object_list[i].is_observed;
 		detection.is_new = object_list[i].is_new;
+		detection.consistency = object_list[i].mu;
 
 		sensor_msgs::PointCloud2 cloud_msg;
 		pcl::toROSMsg(*object_list[i].cloud, cloud_msg);

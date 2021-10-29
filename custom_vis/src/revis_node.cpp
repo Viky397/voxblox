@@ -101,7 +101,7 @@ public:
 		obstacle_label.color.b = 1.0;
 		obstacle_label.scale.x = 0;
 		obstacle_label.scale.y = 0;
-		obstacle_label.scale.z = 0.5;
+		obstacle_label.scale.z = 0.15;
 
 		obstacle_predict = obstacle_marker;
 		obstacle_predict.type = visualization_msgs::Marker::LINE_STRIP;
@@ -183,7 +183,7 @@ public:
 
     			obstacle_label.pose.position.x = x;
 				obstacle_label.pose.position.y = y;
-				obstacle_label.pose.position.z = 3;
+				obstacle_label.pose.position.z = z + bbs[i].h/2 + 0.5;
 				obstacle_label.pose.orientation = obstacle_marker.pose.orientation;
 				std::string str_conf = std::to_string(
 						bbs[i].confidence * 100.0);

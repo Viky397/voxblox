@@ -320,4 +320,38 @@ std::vector<int> association(Eigen::MatrixXd C, int type, double infeasible_cost
         return temp;
     }
 }
+
+double calculate_intersection_rectangle_rotated(const cv::RotatedRect& a, const cv::RotatedRect& b) {
+	std::vector<cv::Point2f> inter;
+	int res = cv::rotatedRectangleIntersection(a, b, inter);
+
+	if (inter.empty() || res == cv::INTERSECT_NONE)
+		return 0.0f;
+	if (res == cv::INTERSECT_FULL)
+		return std::min(a.size.area(), b.size.area());
+
+	float interArea = contourArea(inter);
+	return interArea;
+}
+
+double calculate_intersection_rotated(double a_x, double a_y, double a_l, double a_w, double a_yaw,
+		double b_x, double b_y, double b_l, double b_w, double b_yaw) {
+	cv::RotatedRect rect_a(cv::Point2f(-a_y,-a_x), cv::Size2f(a_l,a_w), a_yaw/M_PI*180);
+	cv::RotatedRect rect_b(cv::Point2f(-b_y,-b_x), cv::Size2f(b_l,b_w), b_yaw/M_PI*180);
+	return calculate_intersection_rectangle_rotated(rect_a, rect_b);
+}
+
+/*
+double calculate_intersection_rotated(const Object& obj_a, const Object& obj_b) {
+	cv::RotatedRect rect_a(cv::Point2f(-obj_a.x_hat(1),-obj_a.x_hat(0)), cv::Size2f(obj_a.l,obj_a.w), obj_a.yaw/M_PI*180);
+	cv::RotatedRect rect_b(cv::Point2f(-obj_b.x_hat(1),-obj_b.x_hat(0)), cv::Size2f(obj_b.l,obj_b.w), obj_b.yaw/M_PI*180);
+	return calculate_intersection_rectangle_rotated(rect_a, rect_b);
+}
+*/
+
+double calculate_intersection_rotated(const Object& obj_a, const Object& obj_b) {
+	return calculate_intersection_rotated(obj_a.x_hat(0),obj_a.x_hat(1),obj_a.l,obj_a.w,obj_a.yaw,
+			obj_b.x_hat(0),obj_b.x_hat(1),obj_b.l,obj_b.w,obj_b.yaw);
+}
+
 }  // namespace kalman

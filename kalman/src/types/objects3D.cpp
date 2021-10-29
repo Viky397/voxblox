@@ -52,18 +52,16 @@ double Object::getAge(double t) {
 std::vector<double> Object::mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl) {
 	auto cloud_merged = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB> >(*cloud + *cloud_pcl);
 	cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
-	new_obs.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
-	new_obs = cloud_pcl;
 
     pcl::UniformSampling<pcl::PointXYZRGB> filter;
 	filter.setInputCloud(cloud_merged);
-	filter.setRadiusSearch(0.05f);
+	filter.setRadiusSearch(0.03f);
 	filter.filter(*cloud);
 
-	zeus_pcl::PointCloudPtr cloud_merged_zpcl(new zeus_pcl::PointCloud());
-	zeus_pcl::fromPCLRGB(*cloud, cloud_merged_zpcl);
+	zeus_pcl::PointCloudPtr cloud_merged_pcl(new zeus_pcl::PointCloud());
+	zeus_pcl::fromPCLRGB(*cloud, cloud_merged_pcl);
 
-	auto bbox = zeus_pcl::getBBox(cloud_merged_zpcl);
+	auto bbox = zeus_pcl::getBBox(cloud_merged_pcl);
 
 	return bbox;
 }
@@ -72,7 +70,7 @@ void Object::updateProbability(double change, double std_change) {
 	std::cout << "[JQ] Object " << ID << " amount of change " << change << std::endl;
 
 	double eps = 1e-5;
-	double tolerance = 1.0;
+	double tolerance = 3*std_change;
 
 	double s_sq = 1.0 / (1.0 / (pow(sig, 2)) + 1.0 / (pow(std_change, 2)));
 	double m = s_sq * (mu / (pow(sig, 2)) + change / (pow(std_change, 2)));
@@ -82,7 +80,7 @@ void Object::updateProbability(double change, double std_change) {
 
 	// double C1 = (a / (a + b)) * boost::math::pdf(norm_dist, change);
 	double C1 = (a / (a + b)) * std::max(boost::math::pdf(norm_dist, change), eps);
-	double C2 = change >= tolerance-eps ? 1000 : (b / (a + b)) * boost::math::pdf(uniform_dist, change);
+	double C2 = change >= tolerance-eps ? (b / (a + b)) * boost::math::pdf(uniform_dist, tolerance) : (b / (a + b)) * boost::math::pdf(uniform_dist, change);
 
 	double C_norm = C1 + C2;
 	C1 /= C_norm;

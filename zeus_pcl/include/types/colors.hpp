@@ -102,7 +102,8 @@ public:
         else if(str_dynamic_ness == "low")
             return 0;
         else
-            throw std::runtime_error("Invalid Dynamic Type: " + str_dynamic_ness);
+            std::cout << "[Warning] Invalid Dynamic Type: " << str_dynamic_ness << std::endl;
+        	return 2;
     }
 
     int getDynamicTypeFromRGB(int r, int g, int b) {

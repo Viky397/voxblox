@@ -44,6 +44,7 @@
 #include <chrono>  // NOLINT [build/c++11]
 #include <string>
 #include <vector>
+#include <mutex>
 #include "types/colors.hpp"
 #include "types/zeus_pcl_types.hpp"
 #include "utils/transform_utils.hpp"
@@ -133,8 +134,13 @@ class SecondaryClusteringNode {
     Eigen::Vector4f gp_params = Eigen::Vector4f::Zero();
 
     std::shared_ptr<Color> color_ = nullptr;
+    std::vector<zeus_pcl::PointCloudPtr> pcl_pcds;
+    std::mutex pcd_mtx;
 
     void secondary_clustering(zeus_pcl::PointCloudPtr pc, zeus_msgs::Detections3D &outputDetections, int type);
+
+    void MergeBoxes(zeus_msgs::Detections3D &dets, size_t target, size_t source);
+    void NMSBoxes(zeus_msgs::Detections3D &dets);
 };
 
 #endif  // SECONDARY_CLUSTERING_SECONDARY_CLUSTERING_NODE_H

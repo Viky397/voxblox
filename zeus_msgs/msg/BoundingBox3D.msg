@@ -15,5 +15,6 @@ int32 ID
 int32 camera
 bool is_observed
 bool is_new
+float64 consistency
 sensor_msgs/PointCloud2 cloud
 sensor_msgs/PointCloud2 new_obs

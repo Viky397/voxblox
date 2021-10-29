@@ -82,12 +82,13 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
     // Check if detections correspond to one of our existing tracks
     // indices[i] = det_index or (-1)
     if (X.size() > 0)
-        optimalAssociation(dets, indices, notassoc, current_time);
+        optimalAssociationSM(dets, indices, notassoc, current_time);
     // Initialize a new object for each unassigned detection
     int M2 = int(notassoc.size());
     for (int j = 0; j < M2; j++) {
         X.push_back(create_new(dets[notassoc[j]], objectID, current_time));
-        indices.push_back(notassoc[j]);
+        indices.push_back(-1);
+        std::cout << "[JQ10] Add object " << X.back().ID << std::endl;
     }
 
     for (uint i = 0; i < X.size(); i++) {
@@ -141,15 +142,8 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
         }
         int j = indices[i];
         if (j >= 0) {
-            if (adjust) {
-                // large when dist is large, small when dist is small
-                R_adj = (1.0 / dist_thresh) * std::max(std::abs(dets[j].x), dist_thresh) * R;
-                // large when dist is small, small when dist is large
-                Q_adj = dist_thresh * std::min(std::abs(1 / dets[j].x), 1.0 / dist_thresh) * Q;
-            } else {
-                Q_adj = Q;
-                R_adj = R;
-            }
+            Q_adj = Q;
+            R_adj = R;
 
             /**
             A(0, 3) = X[i].delta_t;
@@ -188,46 +182,45 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcd_refine(new pcl::PointCloud<pcl::PointXYZRGB>);
             pcl::fromROSMsg(dets[j].cloud, *cloud_pcl);
 
-            sources += *cloud_pcl;
+            X[i].new_obs.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+            *X[i].new_obs = *cloud_pcl;
+
+            X[i].y_prev(0,0) = dets[j].x;
+            X[i].y_prev(1,0) = dets[j].y;
+            X[i].y_prev(2,0) = dets[j].z;
+            X[i].P_hat = Eigen::MatrixXd::Identity(xdim, xdim);
+
+            sources += *X[i].new_obs;
             targets += *X[i].cloud;
 
-            // auto sc_tf = matchPCDs(cloud_pcl, X[i]);
-            auto sc_tf = Eigen::Matrix4f::Identity();
-
-            // std::cout << "[JQ] Scan match result: " << sc_tf << std::endl;
-
-            //sc_tf = (norm(sc_tf) <= 1.0 && norm(sc_tf) >= 0.001) ? sc_tf : Eigen::Matrix4f::Identity();
-
-            pcl::transformPointCloud(*cloud_pcl, *pcd_refine, sc_tf);
-
+            pcl::transformPointCloud(*cloud_pcl, *pcd_refine, sc_tfs.at(std::make_pair(i, j)));
             refines += *pcd_refine;
-
-            auto bbox = X[i].mergeNewCloud(cloud_pcl);
-
-            //float dist_change = norm(sc_tf);
-            //X[i].updateProbability(dist_change, 0.1);
-
-            X[i].x_hat(0,0) = bbox[0];
-            X[i].x_hat(1,0) = bbox[1];
-			X[i].x_hat(2,0) = bbox[2];
-			X[i].y_prev(0,0) = dets[j].x;
-			X[i].y_prev(1,0) = dets[j].y;
-			X[i].y_prev(2,0) = dets[j].z;
-            X[i].P_hat = Eigen::MatrixXd::Identity(xdim, xdim);
-            X[i].l = bbox[3];
-            X[i].w = bbox[4];
-            X[i].h = bbox[5];
-            X[i].yaw = bbox[6];
-
         } else {
-        	if (X[i].expectedToObserve(robot_pose2+Pose2(0.43,0,0), 75)) {
-        		X[i].updateProbability(100, 0.01);
-        		std::cout << "[JQ3] Lower confidence for object " << X[i].ID << " with conf " << X[i].confidence << std::endl;
+        	std::cout << "[JQ8] Checking unassociated object " << X[i].ID << std::endl;
+        	if (X[i].expectedToObserve(robot_pose2+Pose2(0.43,0,0), 75) && !X[i].is_new) {
+        		X[i].updateProbability(100, 0.00001);
+        		X[i].new_obs.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+        		std::cout << "[JQ10] Lower confidence for object (not in FOV) " << X[i].ID << " with conf " << X[i].confidence << std::endl;
         	}
         }
         X[i].last_updated = current_time;
     }
     return std::vector<pcl::PointCloud<pcl::PointXYZRGB> >{sources, targets, refines};
+}
+
+void KalmanTracker::mergeObservation(int ID) {
+	for (auto& obj : X) {
+		if (obj.ID != ID) continue;
+		auto bbox = obj.mergeNewCloud(obj.new_obs);
+		obj.x_hat(0,0) = bbox[0];
+		obj.x_hat(1,0) = bbox[1];
+		obj.x_hat(2,0) = bbox[2];
+		obj.P_hat = Eigen::MatrixXd::Identity(xdim, xdim);
+		obj.l = bbox[3];
+		obj.w = bbox[4];
+		obj.h = bbox[5];
+		obj.yaw = bbox[6];
+	}
 }
 
 void KalmanTracker::prune(Eigen::Matrix4f robot_pose, bool prune_by_confidence) {
@@ -243,12 +236,17 @@ void KalmanTracker::prune(Eigen::Matrix4f robot_pose, bool prune_by_confidence) 
                 if (X[i].get2DArea() < X[j].get2DArea()) {
                     delete_indices.push_back(i);
                     X[j].mergeNewCloud(X[i].cloud);
+                    //X[j].ID = min(X[i].ID,X[j].ID);
                     X[j].is_observed = true;
+                    std::cout << "[JQ10] Merge object " << X[i].ID << " to object " << X[j].ID << " inter: " << interArea/X[i].get2DArea() << std::endl;
                 } else {
                     delete_indices.push_back(j);
                     X[i].mergeNewCloud(X[j].cloud);
+                    //X[i].ID = min(X[i].ID,X[j].ID);
                     X[i].is_observed = true;
+                    std::cout << "[JQ10] Merge objects " << X[j].ID << " to object " << X[i].ID << " inter: " << interArea/X[j].get2DArea() << std::endl;
                 }
+
             }
 
         }
@@ -285,22 +283,6 @@ static double calculate_iou(double x1, double y1, double x2, double y2, double x
     double un = area + areat - intersection;
     double iou = intersection / un;
     return iou;
-}
-
-static double calculate_intersection_rotated(const Object& obj_a, const Object& obj_b) {
-	std::vector<cv::Point2f> inter;
-	cv::RotatedRect rect_a(cv::Point2f(-obj_a.x_hat(1),-obj_a.x_hat(0)), cv::Size2f(obj_a.l,obj_a.w), obj_a.yaw/M_PI*180);
-	cv::RotatedRect rect_b(cv::Point2f(-obj_b.x_hat(1),-obj_b.x_hat(0)), cv::Size2f(obj_b.l,obj_b.w), obj_b.yaw/M_PI*180);
-	int res = cv::rotatedRectangleIntersection(rect_a, rect_b, inter);
-
-	if (inter.empty() || res == cv::INTERSECT_NONE)
-		return 0.0f;
-	if (res == cv::INTERSECT_FULL)
-		return std::min(obj_a.get2DArea(), obj_b.get2DArea());
-
-	float interArea = contourArea(inter);
-	//double iou = interArea / (rect_a.size.area() + rect_b.size.area() - interArea);
-	return interArea;
 }
 
 /*!
@@ -442,16 +424,18 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
                                                   double &infeasible_cost) {
     uint N = object_indices.size();
     uint M = dets_indices.size();
+    sc_tfs.clear();
     Eigen::MatrixXd costMatrix = Eigen::MatrixXd::Zero(N, M);
     if (N == 0 || M == 0)
         return costMatrix;
 
-    double EPS = 1e-15;
+    double EPS = 1e-10;
     double INF = std::numeric_limits<double>::infinity();
     infeasible_cost = INF;
     double max_value = 0;
     for (uint i = 0; i < N; i++) {
     	Eigen::Vector3d x = A * X[object_indices[i]].x_hat;
+    	std::cout << "[JQ10] Object: " << X[i].ID << std::endl;
         for (uint j = 0; j < M; j++) {
         	double d_euclid = dist(x, dets[dets_indices[j]]);
         	if (d_euclid > 10*metricGate) {
@@ -462,15 +446,22 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl(new pcl::PointCloud<pcl::PointXYZRGB>());
             pcl::fromROSMsg(dets[dets_indices[j]].cloud, *cloud_pcl);
 
-            auto sc_tf = matchPCDs(cloud_pcl, X[i]);
+            Eigen::Matrix4f sc_tf;
+            float conf = matchPCDs(cloud_pcl, X[i], 60, sc_tf);
             double d_sm = norm(sc_tf);
 
-            if (d_sm > metricGate || d_sm < EPS) {
+
+            std::cout << "[JQ10]    j: " << j << std::endl;
+            std::cout << "[JQ10]       d_sm: " << d_sm << "   conf: " << conf << std::endl;
+
+
+            if (d_sm > metricGate || d_sm < EPS || conf < 0.9) {
                 costMatrix(i, j) = INF;
                 continue;
             }
 
-            costMatrix(i, j) = d_sm / metricGate;
+            costMatrix(i, j) = d_sm;// + (1 - conf);
+            sc_tfs[std::make_pair(i,j)] = sc_tf;
             if (costMatrix(i, j) > max_value && costMatrix(i, j) != INF)
                 max_value = costMatrix(i, j);
         }
@@ -480,8 +471,8 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
         for (uint i = 0; i < costMatrix.rows(); i++) {
             for (uint j = 0; j < costMatrix.cols(); j++) {
                 if (costMatrix(i, j) == INF) {
-                    costMatrix(i, j) = max_value + 1;
-                    infeasible_cost = max_value + 1;
+                    costMatrix(i, j) = max_value + 100;
+                    infeasible_cost = max_value + 99;
                 }
             }
         }
@@ -579,21 +570,20 @@ static void disentangle_indices(std::vector<int> &cluster, int M, int N, std::ve
     }
 }
 
-Eigen::Matrix4f KalmanTracker::matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target, int max_iter) {
-	kalman::Alignment matcher;
-	matcher.setFarDist(4.0);
+float KalmanTracker::matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target, int max_iter, Eigen::Matrix4f& final_pose) {
+	kalman::Alignment2 matcher;
+	matcher.setFarDist(100000);
 	// set ICP iterations
 	matcher.setMaxIter(max_iter);
 	// set ourlier rejection
-	matcher.setOutlierRejectionDist(0.4);
+	matcher.setOutlierRejectionDist(1.0);
 	// set input point cloud
 	matcher.setSourcePointCloud(source);
 	matcher.setTargetPointCloud(target.cloud);
-	// set initial pose from robot localization
-	matcher.setSourceInitialPose(Eigen::Matrix4f::Identity());
-	Eigen::Matrix4f final_pose = matcher.align_point2plane(20);
+	// match
+	final_pose = matcher.align_point2point();
 
-	return final_pose;
+	return matcher.getConfidence();
 }
 
 void KalmanTracker::optimalAssociation(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int> &indices,
@@ -714,24 +704,41 @@ void KalmanTracker::optimalAssociationSM(const std::vector<zeus_msgs::BoundingBo
 
     Eigen::MatrixXd costMatrix = generateCostMatrixSM(dets, dets_indices, object_indices, infeasible_cost);
     std::vector<int> assignments = kalman::association(costMatrix, 0, infeasible_cost);
+    std::cout << "[JQ10] costMatrix: " << costMatrix << std::endl;
+    std::cout << "[JQ10] Final Association: " << std::endl;
     for (uint i = 0; i < assignments.size(); i++) {
-        if (assignments[i] < 0)
+        if (assignments[i] < 0) {
             indices[object_indices[i]] = -1;
-        else
-            indices[object_indices[i]] = dets_indices[assignments[i]];
+            std::cout << "[JQ10] Obj: " << X[object_indices[i]].ID << " no association found" << std::endl;
+        } else {
+        	double cost = costMatrix(object_indices[i], dets_indices[assignments[i]]);
+            if (cost <= infeasible_cost) {
+            	indices[object_indices[i]] = dets_indices[assignments[i]];
+            	std::cout << "[JQ10] Obj: " << X[object_indices[i]].ID << "  obs: " << assignments[i] << "  cost: "
+            		<< cost << std::endl;
+            } else {
+            	indices[object_indices[i]] = -1;
+            	std::cout << "[JQ10] Obj: " << X[object_indices[i]].ID << " no association found" << std::endl;
+            }
+        }
     }
     for (uint j = 0; j < M; j++) {
         if (!is_member(indices, j))
             notassoc.push_back(j);
     }
+    std::cout << "[JQ10] ====Iteration complete====" << std::endl;
 }
 
 void KalmanTracker::drawBBs() {
 	cv::Mat image(1800, 1800, CV_8UC3, cv::Scalar(0));
+	std::vector<cv::RotatedRect> rects;
+	double scale = 500; // 100
+	double x_shift = 0; // 1400
+	double y_shift = 0; //400
 	for (const auto& obj : X) {
-		double x_coord = -obj.x_hat(0) * 100 + 1400;
-		double y_coord = -obj.x_hat(1) * 100 + 400;
-		cv::RotatedRect rect(cv::Point2f(y_coord,x_coord), cv::Size2f(obj.l*100,obj.w*100), obj.yaw/M_PI*180);
+		double x_coord = -obj.x_hat(0) * scale + x_shift;
+		double y_coord = -obj.x_hat(1) * scale + y_shift;
+		cv::RotatedRect rect(cv::Point2f(y_coord,x_coord), cv::Size2f(obj.l*scale,obj.w*scale), obj.yaw/M_PI*180);
 		cv::Point2f v[4];
 		rect.points(v);
 		for (int i(0); i<4; i++){
@@ -742,9 +749,20 @@ void KalmanTracker::drawBBs() {
 			else if (obj.type == 2)
 				cv::line(image, v[i], v[(i+1)%4], cv::Scalar(0,0,255));
 		}
+		rects.push_back(rect);
 	}
 	cv::imshow("BBs", image);
 	cv::waitKey(100);
+	/*
+	for (size_t i(0); i<X.size(); i++) {
+		for (size_t j(i+1); j<X.size(); j++) {
+			double interArea = calculate_intersection_rectangle_rotated(rects[i], rects[j]);
+			if ((interArea / rects[i].size.area() > ioa_thres) || (interArea / rects[j].size.area() > ioa_thres)) {
+				std::cout << "[JQ10] Plotting intersect bw objects " << X[i].ID << " and " << X[j].ID << std::endl;
+			}
+		}
+	}
+	*/
 }
 
 }  // namespace kalman

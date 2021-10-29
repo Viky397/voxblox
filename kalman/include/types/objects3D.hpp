@@ -75,7 +75,7 @@ class Object {
     double a = 2.0;
     double b = 2.0;
     double mu = 0.0;
-    double sig = 0.1;
+    double sig = 0.15;
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr new_obs = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -124,6 +124,7 @@ class Object {
     	return Pose2(x_hat(0, 0), x_hat(1, 0), 0);
     }
 
+    /*
     void initPrior() {
     	if (type == 0) {
     		// low dynamic
@@ -137,6 +138,13 @@ class Object {
     		a = 2;
     		b = 3;
     	}
+    	confidence = a / (a + b);
+    }
+    */
+
+    void initPrior() {
+    	a = 0.08;
+    	b = 0.08;
     	confidence = a / (a + b);
     }
 

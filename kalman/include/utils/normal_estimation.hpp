@@ -30,6 +30,7 @@ public:
 		for (int i = 0; i < normals.size(); i++) {
 			pcl::PointXYZ pt = pcd->at(i);
 			pcl::Normal nl = normals[i];
+			float curvature = normals[i].curvature;
 			if (pcl_isinf(nl.normal_x) || pcl_isinf(nl.normal_y) || pcl_isinf(nl.normal_z)) {
 				if (skip_inf) continue;
 			}

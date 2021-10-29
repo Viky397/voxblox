@@ -159,12 +159,33 @@ void applyDynamicness(PointCloudPtr cloudIn, std::shared_ptr<Color> color) {
 
 void applyDynamicness(PointCloudPtr cloudIn, int type) {
 	if (!cloudIn) throw std::runtime_error("Color null");
+	int r, g, b;
+	switch(type) {
+	case 0:
+		r = 0;
+		g = 0.75 * 255;
+		b = 0;
+		break;
+	case 1:
+		r = 0.7 * 255;
+		g = 0.6 * 255;
+		b = 0;
+		break;
+	case 2:
+		r = 0.8 * 255;
+		g = 0;
+		b = 0;
+		break;
+	}
     for (uint i = 0; i < cloudIn->size(); i++) {
     	cloudIn->points[i].dynamicness = type;
+    	// cloudIn->points[i].r = r;
+    	// cloudIn->points[i].g = g;
+    	// cloudIn->points[i].b = b;
     }
 }
 
-void divideByDynamicness(PointCloudPtr cloudIn, std::vector<PointCloudPtr>& cloudsOut, std::shared_ptr<Color> color) {
+void divideByDynamicness(const PointCloudPtr cloudIn, std::vector<PointCloudPtr>& cloudsOut, std::shared_ptr<Color> color) {
     for (uint i = 0; i < cloudIn->size(); i++) {
     	PointXYZ& pt = cloudIn->points[i];
     	int dynamicness = color->getDynamicTypeFromRGB(pt.r, pt.g, pt.b);
@@ -186,6 +207,10 @@ PointCloudPtr filterAndCombinePlanes(const std::vector<pcl::PointCloud<pcl::Poin
 		pcd->points.insert(pcd->points.begin(), plane_temp->points.begin(),plane_temp->points.end());
 	}
 	return pcd;
+}
+
+void append(PointCloudPtr cloud_a, PointCloudPtr cloud_b) {
+    cloud_a->points.insert(cloud_a->points.end(), cloud_b->points.begin(), cloud_b->points.end());
 }
 
 void copyCloud(PointCloudPtr cloudIn, PointCloudPtr cloudOut) {
@@ -327,6 +352,8 @@ void to_2d(PointCloudPtr cloudIn, PointCloudPtr cloudOut) {
 }
 
 std::vector<double> getBBox(const PointCloudPtr cluster_pts) {
+	if (cluster_pts->size() == 0)
+		throw std::runtime_error("Empty array, cannot generate bounding box!");
 	std::vector<double> bbox(7); //x, y, z, l, w, h, yaw
 
 	PointCloudPtr cluster_pts_2d (new PointCloud());

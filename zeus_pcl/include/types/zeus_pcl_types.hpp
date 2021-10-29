@@ -153,6 +153,7 @@ class PointCloudTemplate {
     std::vector<T> points;
     uint size() {return points.size();}
     void resize(uint new_size) {points.resize(new_size);}
+    void reserve(uint new_size) {points.reserve(new_size);}
     size_t kdtree_get_point_count() const { return points.size(); }
     float kdtree_get_pt(const size_t idx, const size_t dim) const {
         if (dim == 0)

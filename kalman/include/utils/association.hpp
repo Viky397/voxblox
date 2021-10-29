@@ -39,6 +39,11 @@
 #include <Eigen/Geometry>
 #include <vector>
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+
+#include "types/objects3D.hpp"
+
 namespace kalman {
 
 /*!
@@ -89,5 +94,10 @@ std::vector<int> greedy(Eigen::MatrixXd C, double infeasible_cost);
          If an object is not assigned a detection, the corresponding index will be -1.
 */
 std::vector<int> association(Eigen::MatrixXd C, int type, double infeasible_cost);
+
+double calculate_intersection_rectangle_rotated(const cv::RotatedRect& a, const cv::RotatedRect& b);
+double calculate_intersection_rotated(double a_x, double a_y, double a_l, double a_w, double a_yaw,
+		double b_x, double b_y, double b_l, double b_w, double b_yaw);
+double calculate_intersection_rotated(const Object& obj_a, const Object& obj_b);
 
 }  // namespace kalman
