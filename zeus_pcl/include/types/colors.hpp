@@ -97,8 +97,6 @@ public:
     int getDynamicValue(const std::string& str_dynamic_ness) {
         if(str_dynamic_ness == "high")
             return 2;
-        else if(str_dynamic_ness == "medium")
-            return 1;
         else if(str_dynamic_ness == "low")
             return 0;
         else
