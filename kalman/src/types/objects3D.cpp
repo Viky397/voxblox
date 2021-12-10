@@ -9,30 +9,11 @@
 #include <boost/math/distributions/uniform.hpp>
 
 int Object::getType() {
-    return hmm->get_type();
+    return type;
 }
 
-bool Object::checkFlashing(int type, float lower, float upper) {
-    float ratio  = 0;
-    float count = 0;
-    if ((int)past_types.size() == filter_length) {
-        for (uint i = 0; i < past_types.size(); i++) {
-            if (past_types[i] == type)
-                count += 1;
-        }
-        ratio = count / float(filter_length);
-        if (lower < ratio && ratio < upper)
-            return true;
-    }
-    return false;
-}
-
-void Object::push_type(int t, std::vector<float> class_confidences) {
-    hmm->filter(t, class_confidences);
-    past_types.push_back(t);
-    if ((int)past_types.size() > filter_length) {
-        past_types.pop_front();
-    }
+void Object::set_type(int type_) {
+    type = type_;
 }
 
 double Object::getLostTime(double t) {
@@ -99,6 +80,8 @@ void Object::updateProbability(double change, double std_change) {
 	b = a * (1.0 - f) / f ;
 
 	confidence = a / (a + b);
+
+	life++;
 
 	std::cout << "[JQ]   updated static prob of " << confidence << std::endl;
 }

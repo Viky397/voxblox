@@ -95,7 +95,7 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
         if (indices[i] >= 0) {
             if (is_object_tracker) {
                 std::vector<float> confidences(1, 0.8);
-                X[i].push_type(dets[indices[i]].type, confidences);
+                X[i].set_type(dets[indices[i]].type);
             }
 
             X[i].camera = dets[indices[i]].camera;
@@ -346,10 +346,10 @@ Object KalmanTracker::create_new(const zeus_msgs::BoundingBox3D &det, int &objec
     // auto cloud = boost::make_shared<sensor_msgs::PointCloud2>(det.cloud);
     pcl::fromROSMsg(det.cloud, *x.cloud);
     if (det.class_confidences.size() > 0) {
-        x.push_type(det.type, det.class_confidences);
+        x.set_type(det.type);
     } else {
         std::vector<float> confidences(1, det.confidence);
-        x.push_type(det.type, confidences);
+        x.set_type(det.type);
     }
     x.type = x.getType();
     x.ID = objectID;
@@ -398,10 +398,10 @@ void KalmanTracker::pushTypes(std::vector<zeus_msgs::BoundingBox3D> dets, double
     for (uint i = 0; i < X.size(); i++) {
         if (indices[i] >= 0) {
             if (dets[indices[i]].class_confidences.size() > 0) {
-                X[i].push_type(dets[indices[i]].type, dets[indices[i]].class_confidences);
+                X[i].set_type(dets[indices[i]].type);
             } else {
                 std::vector<float> confidences(1, dets[indices[i]].confidence);
-                X[i].push_type(dets[indices[i]].type, confidences);
+                X[i].set_type(dets[indices[i]].type);
             }
             X[i].last_observed_time = current_time;
         }

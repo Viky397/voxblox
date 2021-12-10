@@ -77,6 +77,8 @@ class Object {
     double mu = 0.0;
     double sig = 0.15;
 
+    int life = 0;
+
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr new_obs = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
 
@@ -85,13 +87,7 @@ class Object {
     */
     int getType();
 
-    /*!
-       \brief "Pushes" the latest detection and class confidences onto the HiddenMarkovModel.
-       \param t The most likely object state, according to the latest detection.
-       \param class_confidences Either: a 1-dim vector with the confidence level for the detection
-            OR: a n-dim vector n = number of states, confidence-level for each class, sum(class_confidences) = 1.
-    */
-    void push_type(int t, std::vector<float> class_confidences);
+    void set_type(int type_);
 
     /*!
        \brief Return how long it has been since an object was last observed in seconds.
@@ -102,17 +98,6 @@ class Object {
        \brief Returns how long it has been since an object was first observed.
     */
     double getAge(double current_time);
-
-    /*!
-       \brief Specifically for flashing red light detection. This function checks to see if the ratio of detections
-       of type is between ratio lower and ratio upper. Ex: A RED detection occuring between 0.35 and 0.65 of the time
-       may be flashing. The ratio is determined by keeping a history of the previous filter_length detections.
-       \param type The type that we would like to check whether it is flashing.
-       \param lower The lower-bound of a ratio of ON times / OFF times.
-       \param upper The upper-bound of a ratio of ON times / OFF times.
-       \return true/false is the state flashing?
-    */
-    bool checkFlashing(int type, float lower, float upper);
 
     std::vector<double> mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl);
 
@@ -143,8 +128,8 @@ class Object {
     */
 
     void initPrior() {
-    	a = 0.08;
-    	b = 0.08;
+    	a = 1;
+    	b = 1;
     	confidence = a / (a + b);
     }
 
