@@ -460,7 +460,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
                 continue;
             }
 
-            costMatrix(i, j) = d_sm;// + (1 - conf);
+            costMatrix(i, j) = d_sm + cost_alpha * abs(dets[dets_indices[j]].type - X[i].type);// + (1 - conf);
             sc_tfs[std::make_pair(i,j)] = sc_tf;
             if (costMatrix(i, j) > max_value && costMatrix(i, j) != INF)
                 max_value = costMatrix(i, j);

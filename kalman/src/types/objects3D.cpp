@@ -63,7 +63,7 @@ void Object::updateProbability(double change, double std_change) {
 	std::cout << "[JQ12]   inlier " << inlier << std::endl;
 	std::cout << "[JQ12]   s_weight " << s_weight << std::endl;
 
-	double tolerance = 1.0;
+	double tolerance = 20.0 * std_change;
 
 	double s_sq = 1.0 / (1.0 / (pow(sig, 2)) + 1.0 / (pow(std_change, 2)));
 	double m = s_sq * (mu / (pow(sig, 2)) + change / (pow(std_change, 2)));
@@ -136,7 +136,7 @@ bool Object::expectedToObserve(Pose2 cam_pose, float fov) {
 	for (const auto& p : samples->points) {
 		Pose2 lm(p.x, p.y, 0);
 		Pose2 T_c_l = lm - cam_pose;
-		if (T_c_l.x() > 0.1 && T_c_l.norm() < 2.8 && fabs(T_c_l.y() / T_c_l.x()) < fabs(fov/2.0/45)) {
+		if (T_c_l.x() > 0.1 && T_c_l.norm() < 2.3 && fabs(T_c_l.y() / T_c_l.x()) < fabs(fov*0.9/2.0/45)) {
 			num_pts_expected++;
 		}
 	}
