@@ -96,12 +96,12 @@ public:
 
     int getDynamicValue(const std::string& str_dynamic_ness) {
         if(str_dynamic_ness == "high")
-            return 2;
-        else if(str_dynamic_ness == "low")
             return 0;
+        else if(str_dynamic_ness == "low")
+            return 1;
         else
             std::cout << "[Warning] Invalid Dynamic Type: " << str_dynamic_ness << std::endl;
-        	return 2;
+        	return 0;
     }
 
     int getDynamicTypeFromRGB(int r, int g, int b) {

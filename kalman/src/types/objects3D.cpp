@@ -4,6 +4,7 @@
 #include "types/objects3D.hpp"
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 #include <boost/math/distributions/normal.hpp>
 #include <boost/math/distributions/uniform.hpp>
@@ -48,38 +49,74 @@ std::vector<double> Object::mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr
 }
 
 void Object::updateProbability(double change, double std_change) {
-	std::cout << "[JQ] Object " << ID << " amount of change " << change << std::endl;
+	std::cout << "[JQ12] Object " << ID << " amount of change " << change << " std " << std_change <<std::endl;
 
-	double eps = 1e-5;
-	double tolerance = 3*std_change;
+	double s_weight = 1;
+
+	if (type == 0 && inlier == false) s_weight = 3;  // dynamic outlier, drop fast
+	if (type == 0 && inlier == true)  s_weight = 0;  // dynamic inlier, rise slow
+	if (type == 1 && inlier == false) s_weight = 0;  // static outlier, drop slow
+	if (type == 1 && inlier == true)  s_weight = 3;  // static inlier, rise fasr
+
+	//s_weight = 0;
+
+	std::cout << "[JQ12]   inlier " << inlier << std::endl;
+	std::cout << "[JQ12]   s_weight " << s_weight << std::endl;
+
+	double tolerance = 1.0;
 
 	double s_sq = 1.0 / (1.0 / (pow(sig, 2)) + 1.0 / (pow(std_change, 2)));
 	double m = s_sq * (mu / (pow(sig, 2)) + change / (pow(std_change, 2)));
+
+	auto Kvals = K(s_weight);
+	double K1 = Kvals.first;
+	double K2 = Kvals.second;
+
+	std::cout << "[JQ12]   K1 " << K1 << "  K2 " << K2 << std::endl;
 
 	boost::math::normal_distribution<double> norm_dist(mu, sig);
 	boost::math::uniform_distribution<double> uniform_dist(0.0, tolerance);
 
 	// double C1 = (a / (a + b)) * boost::math::pdf(norm_dist, change);
-	double C1 = (a / (a + b)) * std::max(boost::math::pdf(norm_dist, change), eps);
-	double C2 = change >= tolerance-eps ? (b / (a + b)) * boost::math::pdf(uniform_dist, tolerance) : (b / (a + b)) * boost::math::pdf(uniform_dist, change);
+	double C1 = K1 * std::max(boost::math::pdf(norm_dist, change), eps);
+	double C2 = change >= tolerance-eps ? K2 * boost::math::pdf(uniform_dist, tolerance) : K2 * boost::math::pdf(uniform_dist, change);
+	C1 = max(eps, C1);
+	C2 = max(eps, C2);
 
 	double C_norm = C1 + C2;
 	C1 /= C_norm;
 	C2 /= C_norm;
 
+
+	std::cout << "[JQ12]   C1 " << C1 << "  C2 " << C2 << std::endl;
+
+	inlier = C1>=C2 ? true : false;
+
 	double mu_prime = C1 * m + C2 * mu;
 	sig = sqrt(C1 * (s_sq + pow(m, 2)) + C2 * (pow(sig, 2) + pow(mu, 2)) - pow(mu_prime, 2));
 
-	double f = C1 * (a + 1.0) / (a + b + 1.0) + C2 * a / (a + b + 1.0);
-	double e = C1 * (a + 1.0) * (a + 2.0) / ((a + b + 1.0) * (a + b + 2.0))
-			  + C2 * a * (a + 1.0) / ((a + b + 1.0) * (a + b + 2.0));
+    double gamma = (a + type*s_weight + 1)/(a + b + s_weight + 1);
+    double eta = (a + type*s_weight)/(a + b + s_weight + 1);
+    double theta = C1*gamma + C2*eta;
+    double alpha = ( (a+type*s_weight+2)*(a+type*s_weight+1)/( (a+b+s_weight+1)*(a+b+s_weight+2) ) );
+    double beta = ( (a+type*s_weight+1)*(a+type*s_weight)/( (a+b+s_weight+1)*(a+b+s_weight+2) ) );
 
-	mu = mu_prime;
+    mu = mu_prime;
+    a = (C1*theta*alpha + beta*C2*theta - pow(theta,2))/(pow(theta,2) - C1*alpha - C2*beta);
+    b = ( (C1*theta*alpha + beta*C2*theta - pow(theta,2))*(1 - C1*gamma - C2*eta) / ( (pow(theta,2) - C1*alpha - C2*beta)* (C1*gamma + C2*eta)) );
 
-	a = (e - f) / (f - e / f);
-	b = a * (1.0 - f) / f ;
+    double cap = 25;
+    if (a>cap || b>cap) {
+        double ratio = max(a,b) / cap;
+        a /= ratio;
+        b /= ratio;
+    }
+
+    std::cout << "[JQ12]   a " << a << "  b " << b << std::endl;
 
 	confidence = a / (a + b);
+
+	std::cout << "[JQ12]   confidence " << confidence << std::endl;
 
 	life++;
 
@@ -108,3 +145,26 @@ bool Object::expectedToObserve(Pose2 cam_pose, float fov) {
 
 	return false;
 }
+
+std::pair<double, double> Object::K(double k) const {
+    double lk1 = (lgamma(a+b) + lgamma(a+k*type+1) + lgamma(b+k-k*type)) - (lgamma(a) + lgamma(b) + lgamma(a+b+k+1));
+    double lk2 = (lgamma(a+b) + lgamma(a+k*type) + lgamma(b+k-k*type+1)) - (lgamma(a) + lgamma(b) + lgamma(a+b+k+1));
+
+    double k1 = exp(lk1);
+    double k2 = exp(lk2);
+
+    double ks = k1+k2;
+
+    k1 /= ks;
+    k2 /= ks;
+
+    k1 = max(eps, k1);
+    k2 = max(eps, k2);
+
+    return std::make_pair(k1, k2);
+}
+
+
+
+
+

@@ -73,11 +73,15 @@ class Object {
     double first_observed_time = -1;
     double last_updated = -1;
     double a = 2.0;
-    double b = 2.0;
+    double b = 1.0;
     double mu = 0.0;
-    double sig = 0.15;
+    double sig = 0.5;
 
     int life = 0;
+
+    bool inlier = true;
+
+    double eps = 1e-5;
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr new_obs = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -128,7 +132,7 @@ class Object {
     */
 
     void initPrior() {
-    	a = 1;
+    	a = 2;
     	b = 1;
     	confidence = a / (a + b);
     }
@@ -147,4 +151,7 @@ class Object {
             O.confidence;
         return output;
     }
+
+private:
+    std::pair<double, double> K(double k) const;
 };

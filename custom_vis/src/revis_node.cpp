@@ -132,24 +132,18 @@ public:
 			obstacle_marker.color.b = 0.0;
 			std::string str_type;
 
-			if (bbs[i].type == 0)
+			if (bbs[i].type == 1)
 				str_type = "Low Dynamic";
-			else if (bbs[i].type == 1)
-				str_type = "Mid Dynamic";
-			else if (bbs[i].type == 2)
+			else if (bbs[i].type == 0)
 				str_type = "High Dynamic";
 
 			double speed = sqrt(pow(bbs[i].x_dot, 2) + pow(bbs[i].y_dot, 2));
 
-			if (bbs[i].type == 0){
+			if (str_type == "Low Dynamic"){
 				obstacle_marker.color.r = 0.0;
 				obstacle_marker.color.g = 0.75;
 				obstacle_marker.color.b = 0.0;
-			} else if (bbs[i].type == 1) {
-				obstacle_marker.color.r = 0.7;
-				obstacle_marker.color.g = 0.6;
-				obstacle_marker.color.b = 0.0;
-			} else if (bbs[i].type == 2) {
+			} else if (str_type == "High Dynamic") {
 				obstacle_marker.color.r = 0.8;
 				obstacle_marker.color.g = 0.0;
 				obstacle_marker.color.b = 0.0;
