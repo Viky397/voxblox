@@ -19,7 +19,7 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
 	pcl_pcds.clear();
 
 	bool vis_normal = false;
-	kalman::LOSFilter los_filter(85);
+	kalman::LOSFilter los_filter(80);
 	auto normal_msg = los_filter.filter(scan, filtered_scan_los, vis_normal);
 	if (vis_normal) normal_line_pub_.publish(normal_msg);
 

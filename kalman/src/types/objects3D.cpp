@@ -56,7 +56,11 @@ void Object::updateProbability(double change, double std_change) {
 	if (type == 0 && inlier == false) s_weight = 3;  // dynamic outlier, drop fast
 	if (type == 0 && inlier == true)  s_weight = 0;  // dynamic inlier, rise slow
 	if (type == 1 && inlier == false) s_weight = 0;  // static outlier, drop slow
-	if (type == 1 && inlier == true)  s_weight = 3;  // static inlier, rise fasr
+	if (type == 1 && inlier == true)  s_weight = 3;  // static inlier, rise fast
+	if (type == 2 && inlier == false) s_weight = 5;  // disappeared outlier, drop very fast
+	if (type == 2 && inlier == true)  s_weight = 0;  // disappeared inlier, rise slow
+
+	type = std::min(type, 1);
 
 	//s_weight = 0;
 
@@ -136,7 +140,7 @@ bool Object::expectedToObserve(Pose2 cam_pose, float fov) {
 	for (const auto& p : samples->points) {
 		Pose2 lm(p.x, p.y, 0);
 		Pose2 T_c_l = lm - cam_pose;
-		if (T_c_l.x() > 0.1 && T_c_l.norm() < 2.3 && fabs(T_c_l.y() / T_c_l.x()) < fabs(fov*0.9/2.0/45)) {
+		if (T_c_l.x() > 0.1 && T_c_l.norm() < 2.4 && fabs(T_c_l.y() / T_c_l.x()) < fabs(fov*0.9/2.0/45)) {
 			num_pts_expected++;
 		}
 	}

@@ -198,6 +198,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
         } else {
         	std::cout << "[JQ8] Checking unassociated object " << X[i].ID << std::endl;
         	if (X[i].expectedToObserve(robot_pose2+Pose2(0.43,0,0), 75) && !X[i].is_new) {
+        		X[i].set_type(0);
         		X[i].updateProbability(100, 0.00001);
         		X[i].new_obs.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
         		std::cout << "[JQ10] Lower confidence for object (not in FOV) " << X[i].ID << " with conf " << X[i].confidence << std::endl;
@@ -250,7 +251,7 @@ void KalmanTracker::prune(Eigen::Matrix4f robot_pose, bool prune_by_confidence) 
             }
 
         }
-        if (prune_by_confidence && X[i].confidence < 0.3) {
+        if (prune_by_confidence && X[i].confidence < 0.4 && X[i].life > 2) {
             delete_indices.push_back(i);
             std::cout << "[JQ3] Remove object for low confidence " << X[i].ID << std::endl;
         }
