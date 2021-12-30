@@ -13,6 +13,8 @@ struct TsdfVoxel {
   float distance = 0.0f;
   float true_distance = 0.0f;
   float weight = 0.0f;
+  bool unknown = true;
+  bool is_static = true;
   Color color;
 };
 

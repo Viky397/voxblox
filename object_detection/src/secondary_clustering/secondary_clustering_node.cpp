@@ -71,12 +71,8 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
     outputDetections.camera = 1;
     outputDetections.bbs.clear();
     // Secondary Clustering
-    for (int type(0); type<pcds.size(); type++) {
-    	secondary_clustering(pcds[type], outputDetections, type);
-    }
-    NMSBoxes(outputDetections);
-    // Publish ROS Message
-    // det_pub_.publish(outputDetections);
+    merge_points(pcds, outputDetections);
+
 
     zeus_pcl::toROSMsg(gp_prior, gp_prior_msg, "map");
     gp_prior_pub_.publish(gp_prior_msg);
@@ -108,6 +104,42 @@ void SecondaryClusteringNode::initialize_transforms() {
     //tfBuffer = zeus_tf::tfBufferPtr(new zeus_tf::tfBuffer());
     //tfListener = zeus_tf::tfListenerPtr(new zeus_tf::tfListener(*tfBuffer));
     //zeus_tf::get_transform(tfBuffer, "velodyne", "c2", Tc2_v);
+}
+
+void SecondaryClusteringNode::merge_points(const std::vector<zeus_pcl::PointCloudPtr>& pcds,
+		zeus_msgs::Detections3D &outputDetections) {
+	zeus_pcl::PointCloudPtr merged_pcd(new zeus_pcl::PointCloud());
+
+	for (const auto& pcd : pcds) {
+		zeus_pcl::append(merged_pcd, pcd);
+	}
+
+	if (merged_pcd->size() == 0) return;
+
+	zeus_msgs::BoundingBox3D detection;
+	sensor_msgs::PointCloud2 cluster_msg;
+
+	zeus_pcl::toROSMsg(merged_pcd, cluster_msg, "map");
+	detection.cloud = cluster_msg;
+
+	zeus_pcl::randomDownSample(merged_pcd, 0.5);
+
+	auto bbox = zeus_pcl::getBBox(merged_pcd);
+
+	detection.x = bbox.at(0);
+	detection.y = bbox.at(1);
+	detection.z = bbox.at(2);
+	detection.l = bbox.at(3);
+	detection.w = bbox.at(4);
+	detection.h = bbox.at(5);
+	detection.yaw = bbox.at(6);
+	detection.type = 1;
+	detection.confidence = 1.0;
+	detection.camera = 1;
+
+	if (detection.l > 0.2 && detection.w > 0.0 && detection.h > 0.3) {
+		outputDetections.bbs.push_back(detection);
+	}
 }
 
 void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,

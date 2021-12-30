@@ -136,6 +136,9 @@ class SecondaryClusteringNode {
 
     void secondary_clustering(zeus_pcl::PointCloudPtr pc, zeus_msgs::Detections3D &outputDetections, int type);
 
+    void merge_points(const std::vector<zeus_pcl::PointCloudPtr>& pcds,
+        zeus_msgs::Detections3D &outputDetections);
+
     void MergeBoxes(zeus_msgs::Detections3D &dets, size_t target, size_t source);
     void NMSBoxes(zeus_msgs::Detections3D &dets);
 };

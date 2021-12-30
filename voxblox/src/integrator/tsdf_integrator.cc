@@ -223,6 +223,7 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
   }
 
   tsdf_voxel->weight = new_weight;
+  tsdf_voxel->unknown = false;
   tsdf_voxel->distance = tsdf;
   tsdf_voxel->true_distance = sdf;
 }
