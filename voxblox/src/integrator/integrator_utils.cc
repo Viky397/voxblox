@@ -81,7 +81,7 @@ RayCaster::RayCaster(const Point& origin, const Point& point_G,
   Point ray_start, ray_end;
   if (is_clearing_ray) {
     FloatingPoint ray_length = (point_G - origin).norm();
-    ray_length = std::min(std::max(ray_length - truncation_distance,
+    ray_length = std::min(std::max(ray_length + truncation_distance,
                                    static_cast<FloatingPoint>(0.0)),
                           max_ray_length_m);
     ray_end = origin + unit_ray * ray_length;
