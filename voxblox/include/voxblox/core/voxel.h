@@ -15,6 +15,7 @@ struct TsdfVoxel {
   float weight = 0.0f;
   bool unknown = true;
   bool is_static = true;
+  bool is_new = true;
   Color color;
 };
 
