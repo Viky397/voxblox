@@ -131,7 +131,7 @@ bool Object::expectedToObserve(Pose2 cam_pose, float fov) {
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr samples(new pcl::PointCloud<pcl::PointXYZRGB>());
 	pcl::UniformSampling<pcl::PointXYZRGB> filter;
 	filter.setInputCloud(cloud);
-	filter.setRadiusSearch(0.25f);
+	filter.setRadiusSearch(0.05f);
 	filter.filter(*samples);
 
 	if (samples->points.size() == 0) return false;
@@ -140,7 +140,7 @@ bool Object::expectedToObserve(Pose2 cam_pose, float fov) {
 	for (const auto& p : samples->points) {
 		Pose2 lm(p.x, p.y, 0);
 		Pose2 T_c_l = lm - cam_pose;
-		if (T_c_l.x() > 0.1 && T_c_l.norm() < 2.4 && fabs(T_c_l.y() / T_c_l.x()) < fabs(fov*0.9/2.0/45)) {
+		if (T_c_l.x() > 0.1 && T_c_l.norm() < 3.5 && fabs(T_c_l.y() / T_c_l.x()) < fabs(fov/2.0/45)) {
 			num_pts_expected++;
 		}
 	}
