@@ -54,7 +54,7 @@ zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<p
     r_oc_z.block<1,1>(2,3) = T_oc.block<1,1>(2,3);
     zeus_pcl::transform_cloud(pc, C_oc);
     zeus_pcl::transform_cloud(pc, r_oc_z);
-    zeus_pcl::passthrough(pc, gp_prior, -100, 100, -100, 100, 0.1, 3.5);
+    zeus_pcl::passthrough(pc, gp_prior, -100, 100, -100, 100, 0.02, 4);
 
     r_oc_xy.block<2,1>(0,3) = T_oc.block<2,1>(0,3);
     zeus_pcl::transform_cloud(gp_prior, r_oc_xy);
@@ -144,7 +144,8 @@ void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,
         detection.confidence = 1.0;
         detection.camera = 1;
 
-        if (detection.l > 0.2 && detection.w > 0.0 && detection.h > 0.3) {
+        if ((detection.l > 0.01 && detection.w > 0.01 && detection.h > 0.01) &&
+        		(detection.l < 1.0 && detection.w < 1.0 && detection.h < 1.0)) {
         	outputDetections.bbs.push_back(detection);
         	pcl_pcds.push_back(cluster_pts);
         }

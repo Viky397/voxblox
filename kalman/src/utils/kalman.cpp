@@ -197,7 +197,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
             refines += *pcd_refine;
         } else {
         	std::cout << "[JQ8] Checking unassociated object " << X[i].ID << std::endl;
-        	if (X[i].expectedToObserve(robot_pose2+Pose2(0.43,0,0), 75) && !X[i].is_new) {
+        	if (X[i].expectedToObserve(robot_pose2+Pose2(0,0,0), 150) && !X[i].is_new) {
         		X[i].set_type(0);
         		X[i].updateProbability(100, 0.00001);
         		X[i].new_obs.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
