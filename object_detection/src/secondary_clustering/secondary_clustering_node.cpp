@@ -114,7 +114,10 @@ void SecondaryClusteringNode::merge_points(const std::vector<zeus_pcl::PointClou
 		zeus_pcl::append(merged_pcd, pcd);
 	}
 
-	if (merged_pcd->size() == 0) return;
+	if (merged_pcd->size() == 0) {
+		std::cout << "Merged cloud is empty!" << std::endl;
+		return;
+	}
 
 	zeus_msgs::BoundingBox3D detection;
 	sensor_msgs::PointCloud2 cluster_msg;
@@ -137,7 +140,7 @@ void SecondaryClusteringNode::merge_points(const std::vector<zeus_pcl::PointClou
 	detection.confidence = 1.0;
 	detection.camera = 1;
 
-	if (detection.l > 0.2 && detection.w > 0.0 && detection.h > 0.3) {
+	if (detection.l > 0.0 && detection.w > 0.0 && detection.h > 0.0) {
 		outputDetections.bbs.push_back(detection);
 	}
 }
