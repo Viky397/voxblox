@@ -145,7 +145,7 @@ void SecondaryClusteringNode::secondary_clustering(zeus_pcl::PointCloudPtr pc,
         detection.camera = 1;
 
         if ((detection.l > 0.01 && detection.w > 0.01 && detection.h > 0.01) &&
-        		(detection.l < 1.0 && detection.w < 1.0 && detection.h < 1.0)) {
+        		(detection.l < 1.5 && detection.w < 1.5 && detection.h < 1.5)) {
         	outputDetections.bbs.push_back(detection);
         	pcl_pcds.push_back(cluster_pts);
         }
