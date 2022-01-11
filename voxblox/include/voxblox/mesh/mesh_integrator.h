@@ -151,7 +151,8 @@ class MeshIntegrator {
         new MixedThreadSafeIndex(all_tsdf_blocks.size()));
 
     std::list<std::thread> integration_threads;
-    for (size_t i = 0; i < config_.integrator_threads; ++i) {
+    //for (size_t i = 0; i < config_.integrator_threads; ++i) {
+    for (size_t i = 0; i < 1; ++i) {
       integration_threads.emplace_back(
           &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
           clear_updated_flag, index_getter.get());
@@ -192,16 +193,26 @@ class MeshIntegrator {
     VertexIndex next_mesh_index = 0;
 
     VoxelIndex voxel_index;
+    float lb = 0;//1.2;
+    //std::ofstream save("/home/jqian/Downloads/vox_weight.csv", std::ios::app);
     for (voxel_index.x() = 0; voxel_index.x() < vps - 1; ++voxel_index.x()) {
       for (voxel_index.y() = 0; voxel_index.y() < vps - 1; ++voxel_index.y()) {
         for (voxel_index.z() = 0; voxel_index.z() < vps - 1;
              ++voxel_index.z()) {
           Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
-          extractMeshInsideBlock(*block, voxel_index, coords, &next_mesh_index,
+          const TsdfVoxel& v = block->getVoxelByVoxelIndex(voxel_index);
+          float weight = v.weight;
+          //if (weight > 0) {
+          //   save << weight << std::endl;
+          //}
+          if (weight > lb) {
+        	  extractMeshInsideBlock(*block, voxel_index, coords, &next_mesh_index,
                                  mesh.get());
+          }
         }
       }
     }
+    //save.close();
 
     // Max X plane
     // takes care of edge (x_max, y_max, z),
@@ -210,8 +221,12 @@ class MeshIntegrator {
     for (voxel_index.z() = 0; voxel_index.z() < vps; voxel_index.z()++) {
       for (voxel_index.y() = 0; voxel_index.y() < vps; voxel_index.y()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
-        extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
-                            mesh.get());
+        const TsdfVoxel& v = block->getVoxelByVoxelIndex(voxel_index);
+        float weight = v.weight;
+        if (weight > lb) {
+        	extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,mesh.get());
+        }
+
       }
     }
 
@@ -222,8 +237,12 @@ class MeshIntegrator {
     for (voxel_index.z() = 0; voxel_index.z() < vps; voxel_index.z()++) {
       for (voxel_index.x() = 0; voxel_index.x() < vps - 1; voxel_index.x()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
-        extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
+        const TsdfVoxel& v = block->getVoxelByVoxelIndex(voxel_index);
+        float weight = v.weight;
+        if (weight > lb) {
+        	extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
                             mesh.get());
+        }
       }
     }
 
@@ -232,8 +251,12 @@ class MeshIntegrator {
     for (voxel_index.y() = 0; voxel_index.y() < vps - 1; voxel_index.y()++) {
       for (voxel_index.x() = 0; voxel_index.x() < vps - 1; voxel_index.x()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
-        extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
+        const TsdfVoxel& v = block->getVoxelByVoxelIndex(voxel_index);
+        float weight = v.weight;
+        if (weight > lb) {
+        	extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
                             mesh.get());
+        }
       }
     }
   }
