@@ -301,7 +301,7 @@ class KalmanTracker {
         std::vector<int> dets_indices, std::vector<int> object_indices, double &infeasible_cost);
 
     Eigen::MatrixXd generateCostMatrixSM(const std::vector<zeus_msgs::BoundingBox3D> &dets,
-            std::vector<int> dets_indices, std::vector<int> object_indices, double &infeasible_cost);
+            std::vector<int> dets_indices, std::vector<int> object_indices, double &infeasible_cost, const Eigen::Matrix4f& T, Eigen::MatrixXd& changeSignMatrix);
 
     /*!
        \brief This method first clusters objects and detections together based on the maximum association distance
@@ -318,7 +318,7 @@ class KalmanTracker {
         std::vector<int>& notassoc, double current_time);
 
     void optimalAssociationSM(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int>& indices,
-            std::vector<int>& notassoc, double current_time);
+            std::vector<int>& notassoc, std::vector<float>& change_signs, const Eigen::Matrix4f& T, double current_time);
 
     float matchPCDs(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr source, const Object& target,
     		int max_iter, Eigen::Matrix4f& final_pose);

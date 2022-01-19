@@ -83,7 +83,7 @@ void Object::updateProbability(double change, double std_change) {
 
 	// double C1 = (a / (a + b)) * boost::math::pdf(norm_dist, change);
 	double C1 = K1 * std::max(boost::math::pdf(norm_dist, change), eps);
-	double C2 = change >= tolerance-eps ? K2 * boost::math::pdf(uniform_dist, tolerance) : K2 * boost::math::pdf(uniform_dist, change);
+	double C2 = fabs(change) >= tolerance-eps ? K2 * boost::math::pdf(uniform_dist, tolerance) : K2 * boost::math::pdf(uniform_dist, fabs(change));
 	C1 = max(eps, C1);
 	C2 = max(eps, C2);
 
@@ -116,15 +116,15 @@ void Object::updateProbability(double change, double std_change) {
         b /= ratio;
     }
 
-    std::cout << "[JQ12]   a " << a << "  b " << b << std::endl;
+    //std::cout << "[JQ12]   a " << a << "  b " << b << std::endl;
 
 	confidence = a / (a + b);
 
-	std::cout << "[JQ12]   confidence " << confidence << std::endl;
+	//std::cout << "[JQ12]   confidence " << confidence << std::endl;
 
 	life++;
 
-	std::cout << "[JQ]   updated static prob of " << confidence << std::endl;
+	//std::cout << "[JQ]   updated static prob of " << confidence << std::endl;
 }
 
 bool Object::expectedToObserve(Pose2 cam_pose, float fov) {

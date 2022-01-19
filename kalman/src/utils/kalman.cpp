@@ -75,6 +75,7 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
 		obj.is_new = false;
 	}
     indices = std::vector<int>(X.size(), -1);
+    auto change_signs = std::vector<float>(X.size(), 0);
     std::vector<int> notassoc;
     for (uint j = 0; j < dets.size(); j++) {
         notassoc.push_back(j);
@@ -82,13 +83,13 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
     // Check if detections correspond to one of our existing tracks
     // indices[i] = det_index or (-1)
     if (X.size() > 0)
-        optimalAssociationSM(dets, indices, notassoc, current_time);
+        optimalAssociationSM(dets, indices, notassoc, change_signs, robot_pose, current_time);
     // Initialize a new object for each unassigned detection
     int M2 = int(notassoc.size());
     for (int j = 0; j < M2; j++) {
         X.push_back(create_new(dets[notassoc[j]], objectID, current_time));
         indices.push_back(-1);
-        std::cout << "[JQ10] Add object " << X.back().ID << std::endl;
+        //std::cout << "[JQ10] Add object " << X.back().ID << std::endl;
     }
 
     for (uint i = 0; i < X.size(); i++) {
@@ -106,6 +107,8 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
             X[i].delta_t = current_time - X[i].last_observed_time;
             X[i].last_observed_time = current_time;
             X[i].is_observed = true;
+            X[i].change_sign = 1;
+            //std::cout << "[JQ30]   object: " << i << " change is " <<  change_signs[i] << std::endl;
         }
     }
 }
@@ -422,11 +425,14 @@ void KalmanTracker::pruneOld(double current_time) {
 Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs::BoundingBox3D> &dets,
                                                   std::vector<int> dets_indices,
                                                   std::vector<int> object_indices,
-                                                  double &infeasible_cost) {
+                                                  double &infeasible_cost,
+												  const Eigen::Matrix4f& T,
+												  Eigen::MatrixXd& changeSignMatrix) {
     uint N = object_indices.size();
     uint M = dets_indices.size();
     sc_tfs.clear();
     Eigen::MatrixXd costMatrix = Eigen::MatrixXd::Zero(N, M);
+    changeSignMatrix = Eigen::MatrixXd::Zero(N, M);
     if (N == 0 || M == 0)
         return costMatrix;
 
@@ -436,7 +442,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
     double max_value = 0;
     for (uint i = 0; i < N; i++) {
     	Eigen::Vector3d x = A * X[object_indices[i]].x_hat;
-    	std::cout << "[JQ10] Object: " << X[i].ID << std::endl;
+    	//std::cout << "[JQ10] Object: " << X[i].ID << std::endl;
         for (uint j = 0; j < M; j++) {
         	double d_euclid = dist(x, dets[dets_indices[j]]);
         	if (d_euclid > 10*metricGate) {
@@ -451,9 +457,20 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
             float conf = matchPCDs(cloud_pcl, X[i], 60, sc_tf);
             double d_sm = norm(sc_tf);
 
+            Eigen::Matrix4f sc_body = T.inverse() * sc_tf * T;
 
-            std::cout << "[JQ10]    j: " << j << std::endl;
-            std::cout << "[JQ10]       d_sm: " << d_sm << "   conf: " << conf << std::endl;
+            //std::cout << "[JQ30]   i  j: " << i << "  " <<  j << std::endl;
+            //std::cout << "[JQ30]      bdx  bdy: " << sc_body(0,3) << "  " <<  sc_body(1,3) << std::endl;
+            //std::cout << "[JQ30]      dsm: " << d_sm << std::endl;
+
+            int sign = 1;
+            if (abs(sc_body(0,3)) < 0.05) sign = 1;
+            else if (sc_body(0,3) > 0) sign = 1;
+            else sign = -1;
+            changeSignMatrix(i, j) = sign;
+
+            //std::cout << "[JQ10]    j: " << j << std::endl;
+            //std::cout << "[JQ10]       d_sm: " << d_sm << "   conf: " << conf << std::endl;
 
 
             if (d_sm > metricGate || d_sm < EPS || conf < 0.9) {
@@ -679,7 +696,7 @@ void KalmanTracker::optimalAssociation(const std::vector<zeus_msgs::BoundingBox3
 
 
 void KalmanTracker::optimalAssociationSM(const std::vector<zeus_msgs::BoundingBox3D> &dets, std::vector<int> &indices,
-                                       std::vector<int> &notassoc, double current_time) {
+                                       std::vector<int> &notassoc, std::vector<float>& change_signs, const Eigen::Matrix4f& T, double current_time) {
     uint N = X.size();
     uint M = dets.size();
     if (N == 0) {
@@ -694,6 +711,8 @@ void KalmanTracker::optimalAssociationSM(const std::vector<zeus_msgs::BoundingBo
         return;
     }
 
+    Eigen::MatrixXd changeSignMatrix;
+
     notassoc.clear();
     std::vector<int> object_indices;
     for (uint i(0); i<N; i++) object_indices.push_back(i);
@@ -703,23 +722,21 @@ void KalmanTracker::optimalAssociationSM(const std::vector<zeus_msgs::BoundingBo
 
     double infeasible_cost = std::numeric_limits<double>::infinity();
 
-    Eigen::MatrixXd costMatrix = generateCostMatrixSM(dets, dets_indices, object_indices, infeasible_cost);
+    Eigen::MatrixXd costMatrix = generateCostMatrixSM(dets, dets_indices, object_indices, infeasible_cost, T , changeSignMatrix);
     std::vector<int> assignments = kalman::association(costMatrix, 0, infeasible_cost);
-    std::cout << "[JQ10] costMatrix: " << costMatrix << std::endl;
-    std::cout << "[JQ10] Final Association: " << std::endl;
+
     for (uint i = 0; i < assignments.size(); i++) {
         if (assignments[i] < 0) {
             indices[object_indices[i]] = -1;
-            std::cout << "[JQ10] Obj: " << X[object_indices[i]].ID << " no association found" << std::endl;
+            change_signs[object_indices[i]] = 0;
         } else {
         	double cost = costMatrix(object_indices[i], dets_indices[assignments[i]]);
             if (cost <= infeasible_cost) {
             	indices[object_indices[i]] = dets_indices[assignments[i]];
-            	std::cout << "[JQ10] Obj: " << X[object_indices[i]].ID << "  obs: " << assignments[i] << "  cost: "
-            		<< cost << std::endl;
+            	change_signs[object_indices[i]] = changeSignMatrix(object_indices[i], dets_indices[assignments[i]]);
             } else {
             	indices[object_indices[i]] = -1;
-            	std::cout << "[JQ10] Obj: " << X[object_indices[i]].ID << " no association found" << std::endl;
+            	change_signs[object_indices[i]] = 0;
             }
         }
     }
@@ -727,7 +744,6 @@ void KalmanTracker::optimalAssociationSM(const std::vector<zeus_msgs::BoundingBo
         if (!is_member(indices, j))
             notassoc.push_back(j);
     }
-    std::cout << "[JQ10] ====Iteration complete====" << std::endl;
 }
 
 void KalmanTracker::drawBBs() {

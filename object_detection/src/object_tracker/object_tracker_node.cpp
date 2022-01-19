@@ -218,6 +218,7 @@ void convertToRosMessage(const std::vector<Object>& object_list,
 		detection.confidence = object_list[i].confidence;
 		detection.is_observed = object_list[i].is_observed;
 		detection.is_new = object_list[i].is_new;
+		detection.change_sign = object_list[i].change_sign;
 		detection.consistency = object_list[i].mu;
 
 		sensor_msgs::PointCloud2 cloud_msg;
