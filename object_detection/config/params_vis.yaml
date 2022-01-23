@@ -1,9 +1,0 @@
-# BEV Shape Parameters
-meter_to_pixel: 20.0
-# Visualization:
-SHOW_RAW_DETS: true
-SHOW_POINTS: false
-SHOW_CUBES: true
-SHOW_DETAILED_TEXT: true
-SHOW_MAP: true
-viz_divide: 2   # Divide visualization W, H by this factor (saves computation power)

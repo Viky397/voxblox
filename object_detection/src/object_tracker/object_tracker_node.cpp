@@ -183,10 +183,10 @@ void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurement
 		auto& obj = objects.at(id_idx_lut.at(pair.first));
 		obj.updateProbability(pair.second, std);
 
-		std::cout << "[JQ10] Object " << obj.ID <<  " gets change of " << fabs(pair.second) << std::endl;
-		if (fabs(pair.second) < 0.125) {
+		std::cout << "[JQ40] Object " << obj.ID <<  " gets change of " << fabs(pair.second) << std::endl;
+		if (fabs(pair.second) < 0.01) {
 			auto bbox = obj.mergeNewCloud(obj.new_obs);
-			std::cout << "[JQ10]    merge in observation" << std::endl;
+			std::cout << "[JQ40]    merge in observation"<< std::endl;
 			obj.x_hat(0, 0) = bbox[0];
 			obj.x_hat(1, 0) = bbox[1];
 			obj.x_hat(2, 0) = bbox[2];

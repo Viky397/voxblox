@@ -132,7 +132,7 @@ class Object {
     */
 
     void initPrior() {
-    	a = 2;
+    	a = 1;
     	b = 1;
     	confidence = a / (a + b);
     }

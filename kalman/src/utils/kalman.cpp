@@ -251,7 +251,7 @@ void KalmanTracker::prune(Eigen::Matrix4f robot_pose, bool prune_by_confidence) 
             }
 
         }
-        if (prune_by_confidence && X[i].confidence < 0.4 && X[i].life > 2) {
+        if (prune_by_confidence && X[i].confidence < 0.49 && X[i].life > 0) {
             delete_indices.push_back(i);
             std::cout << "[JQ3] Remove object for low confidence " << X[i].ID << std::endl;
         }
@@ -439,7 +439,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
     	std::cout << "[JQ10] Object: " << X[i].ID << std::endl;
         for (uint j = 0; j < M; j++) {
         	double d_euclid = dist(x, dets[dets_indices[j]]);
-        	if (d_euclid > 10*metricGate) {
+        	if (d_euclid > 4*metricGate) {
         		costMatrix(i, j) = INF;
         		continue;
         	}
@@ -448,7 +448,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
             pcl::fromROSMsg(dets[dets_indices[j]].cloud, *cloud_pcl);
 
             Eigen::Matrix4f sc_tf;
-            float conf = matchPCDs(cloud_pcl, X[i], 60, sc_tf);
+            float conf = matchPCDs(cloud_pcl, X[i], 20, sc_tf);
             double d_sm = norm(sc_tf);
 
 
