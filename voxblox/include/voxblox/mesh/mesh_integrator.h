@@ -193,7 +193,7 @@ class MeshIntegrator {
     VertexIndex next_mesh_index = 0;
 
     VoxelIndex voxel_index;
-    float lb = 0;//1.2;
+    float lb = 1.2;
     //std::ofstream save("/home/jqian/Downloads/vox_weight.csv", std::ios::app);
     for (voxel_index.x() = 0; voxel_index.x() < vps - 1; ++voxel_index.x()) {
       for (voxel_index.y() = 0; voxel_index.y() < vps - 1; ++voxel_index.y()) {
