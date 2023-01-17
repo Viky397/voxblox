@@ -30,23 +30,22 @@
 #include "voxblox_ros/ptcloud_vis.h"
 #include "voxblox_ros/transformer.h"
 
-#include "secondary_clustering/secondary_clustering_node.h"
-#include "object_tracker/object_tracker_node.h"
+//#include "object_tracker/object_tracker_node.h"
 
 namespace voxblox {
 
 constexpr float kDefaultMaxIntensity = 100.0;
 
-class TsdfServer {
+class PocdTsdfServer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  TsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
-  TsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+  PocdTsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  PocdTsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
              const TsdfMap::Config& config,
              const TsdfIntegratorBase::Config& integrator_config,
              const MeshIntegratorConfig& mesh_config);
-  virtual ~TsdfServer() {}
+  virtual ~PocdTsdfServer() {}
 
   void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
 
@@ -234,8 +233,7 @@ class TsdfServer {
   int num_subscribers_tsdf_map_;
 
   // Clustering and matching
-  std::unique_ptr<object_detection::SecondaryClusteringNode> clustering_node_;
-  std::unique_ptr<object_detection::KalmanTrackerNode> tracking_node_;
+  //std::unique_ptr<object_detection::KalmanTrackerNode> tracking_node_;
 
 
   // Maps and integrators.

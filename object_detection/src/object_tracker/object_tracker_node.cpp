@@ -2,6 +2,8 @@
 #include "object_tracker/object_tracker_node.h"
 #include <vector>
 
+namespace object_detection {
+
 void convertToRosMessage(const std::vector<Object>& object_list,
 		zeus_msgs::Detections3D &outputDetections, float yaw);
 
@@ -233,4 +235,6 @@ void convertToRosMessage(const std::vector<Object>& object_list,
 
 		outputDetections.bbs.push_back(detection);
 	}
+}
+
 }

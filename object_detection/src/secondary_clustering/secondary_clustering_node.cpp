@@ -9,6 +9,8 @@
 #include "utils/planar_filter.hpp"
 #include "utils/association.hpp"
 
+namespace object_detection {
+
 zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& scan, const Eigen::Matrix4d& T_oc) {
 	std::lock_guard<std::mutex> lock(pcd_mtx);
 
@@ -212,4 +214,6 @@ void SecondaryClusteringNode::NMSBoxes(zeus_msgs::Detections3D &dets) {
 	}
 	dets.bbs = filtered_bbs;
 	std::cout << "[JQ10] Dets after NMS " << dets.bbs.size() << std::endl;
+}
+
 }

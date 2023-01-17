@@ -21,12 +21,12 @@ int main(int argc, char **argv) {
     message_filters::Subscriber<nav_msgs::Odometry> sub_odom(nh, pose_topic, 100);
 
     // Initialize kalman tracker node object
-    KalmanTrackerNode myNode = KalmanTrackerNode(nh);
+    object_detection::KalmanTrackerNode myNode = object_detection::KalmanTrackerNode(nh);
 
     typedef message_filters::sync_policies::ApproximateTime<zeus_msgs::Detections3D, nav_msgs::Odometry> sync_policy;
     message_filters::Synchronizer<sync_policy> sync(sync_policy(100), sub_det, sub_odom);
 
-    sync.registerCallback(boost::bind(&KalmanTrackerNode::callback, myNode, _1, _2));
+    sync.registerCallback(boost::bind(&object_detection::KalmanTrackerNode::callback, myNode, _1, _2));
 
     ROS_INFO_STREAM("[OBJ] kalman tracker running!");
     ros::spin();

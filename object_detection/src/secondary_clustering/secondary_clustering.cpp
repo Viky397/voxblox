@@ -11,9 +11,9 @@ int main(int argc, char **argv) {
     std::string node_name = ros::this_node::getName();
     nh.getParam(node_name + "/lidar_topic",     lidar_topic);
     // Initialize cluster publisher node object
-    SecondaryClusteringNode myNode(nh);
+    object_detection::SecondaryClusteringNode myNode(nh);
     // Subscribers
-    ros::Subscriber sub = nh.subscribe(lidar_topic, 1, &SecondaryClusteringNode::callback, &myNode);
+    ros::Subscriber sub = nh.subscribe(lidar_topic, 1, &object_detection::SecondaryClusteringNode::callback, &myNode);
     ROS_INFO("[OBJ] secondary_clustering running!");
     ros::spin();
     return 0;

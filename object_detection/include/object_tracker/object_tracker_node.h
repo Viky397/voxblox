@@ -50,6 +50,8 @@
 #include <boost/math/distributions/normal.hpp>
 #include <boost/math/distributions/uniform.hpp>
 
+namespace object_detection {
+
 typedef boost::shared_ptr<kalman::KalmanTracker> KalmanPtr;
 
 //* KalmanTrackerNode
@@ -116,5 +118,7 @@ class KalmanTrackerNode {
     ros::Publisher sm_source_pub_;
     ros::Publisher sm_refined_pub_;
 };
+
+}
 
 #endif  // OBJECT_TRACKER_OBJECT_TRACKER_NODE_H

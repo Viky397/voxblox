@@ -52,6 +52,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
 
+namespace object_detection {
 //* SecondaryClusteringNode
 /**
 * \brief This ROS node receives 3D LIDAR pointclouds and outputs 3D object centroids and cuboids using
@@ -139,5 +140,7 @@ class SecondaryClusteringNode {
     void MergeBoxes(zeus_msgs::Detections3D &dets, size_t target, size_t source);
     void NMSBoxes(zeus_msgs::Detections3D &dets);
 };
+
+}
 
 #endif  // SECONDARY_CLUSTERING_SECONDARY_CLUSTERING_NODE_H
