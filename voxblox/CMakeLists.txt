@@ -4,8 +4,7 @@ project(voxblox)
 find_package(catkin_simple REQUIRED )
 catkin_simple(ALL_DEPS_REQUIRED)
 
-set(CMAKE_MACOSX_RPATH 0)
-add_definitions(-std=c++11 -Wall -Wextra)
+add_compile_options(-std=c++14)
 
 ############
 # PROTOBUF #
@@ -59,81 +58,6 @@ cs_add_library(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto)
 
-############
-# BINARIES #
-############
-
-add_executable(tsdf_to_esdf
-  test/tsdf_to_esdf.cc
-)
-target_link_libraries(tsdf_to_esdf ${PROJECT_NAME})
-
-add_executable(test_load_esdf
-  test/test_load_esdf.cc
-)
-target_link_libraries(test_load_esdf ${PROJECT_NAME})
-
-#########
-# TESTS #
-#########
-add_custom_target(test_data)
-add_custom_command(TARGET test_data
-                  COMMAND rm -rf test_data
-                  COMMAND mkdir -p test_data
-                  COMMAND cp -r ${CMAKE_SOURCE_DIR}/test/test_data/*
-                                test_data/ || :)
-
-#add_definitions(-DVISUALIZE_UNIT_TEST_RESULTS)
-
-catkin_add_gtest(test_approx_hash_array
-  test/test_approx_hash_array.cc
-)
-target_link_libraries(test_approx_hash_array ${PROJECT_NAME})
-
-catkin_add_gtest(test_tsdf_map
-  test/test_tsdf_map.cc
-)
-target_link_libraries(test_tsdf_map ${PROJECT_NAME})
-
-catkin_add_gtest(test_protobuf
-  test/test_protobuf.cc
-)
-target_link_libraries(test_protobuf ${PROJECT_NAME})
-
-catkin_add_gtest(test_tsdf_interpolator
-  test/test_tsdf_interpolator.cc
-)
-target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME})
-
-catkin_add_gtest(test_layer
-  test/test_layer.cc
-)
-target_link_libraries(test_layer ${PROJECT_NAME})
-
-catkin_add_gtest(test_merge_integration
-  test/test_merge_integration.cc
-)
-target_link_libraries(test_merge_integration ${PROJECT_NAME})
-
-catkin_add_gtest(test_layer_utils
-  test/test_layer_utils.cc
-)
-target_link_libraries(test_layer_utils ${PROJECT_NAME})
-
-catkin_add_gtest(test_sdf_integrators
-  test/test_sdf_integrators.cc
-)
-target_link_libraries(test_sdf_integrators ${PROJECT_NAME})
-
-catkin_add_gtest(test_bucket_queue
-  test/test_bucket_queue.cc
-)
-target_link_libraries(test_bucket_queue ${PROJECT_NAME})
-
-catkin_add_gtest(test_clear_spheres
-  test/test_clear_spheres.cc
-)
-target_link_libraries(test_clear_spheres ${PROJECT_NAME})
 
 ##########
 # EXPORT #

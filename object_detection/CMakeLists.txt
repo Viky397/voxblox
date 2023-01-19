@@ -36,20 +36,6 @@ target_link_libraries(object_detection_lib
     ${OpenCV_LIBS}
 )
 
-# Secondary Clustering
-cs_add_executable(secondary_clustering src/secondary_clustering/secondary_clustering.cpp)
-target_link_libraries(secondary_clustering
-   object_detection_lib
-)
-add_dependencies(secondary_clustering zeus_msgs_generate_messages_cpp)
-
-# Object Tracker
-cs_add_executable(object_tracker src/object_tracker/object_tracker.cpp)
-target_link_libraries(object_tracker
-   object_detection_lib
-)
-add_dependencies(object_tracker zeus_msgs_generate_messages_cpp)
-
 cs_install()
 cs_export()
 
