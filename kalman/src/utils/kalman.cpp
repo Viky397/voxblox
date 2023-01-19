@@ -766,8 +766,8 @@ void KalmanTracker::drawBBs() {
 				cv::line(image, v[i], v[(i+1)%4], cv::Scalar(0,0,255));
 		}
 	}
-	cv::imshow("BBs", image);
-	cv::waitKey(100);
+	//cv::imshow("BBs", image);
+	//cv::waitKey(100);
 }
 
 }  // namespace kalman

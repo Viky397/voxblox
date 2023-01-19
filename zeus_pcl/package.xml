@@ -6,25 +6,21 @@
   <maintainer email="keenan.burnett@autodrive.utoronto.ca">keenan</maintainer>
   <author>Keenan Burnett</author>
   <license>BSD</license>
-  <build_depend>message_generation</build_depend>
-  <exec_depend>message_runtime</exec_depend>
+
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>opencv3_catkin</build_depend>
-  <build_depend>zeus_msgs</build_depend>
-  <build_depend>rospy</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>roslint</build_depend>
-  <build_depend>libpcl-all</build_depend>
-  <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>rospy</build_export_depend>
-  <build_export_depend>nav_msgs</build_export_depend>
-  <build_export_depend>std_msgs</build_export_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
   
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>libpcl-all</exec_depend>
-  <export>
-  </export>
+  <depend>roscpp</depend>
+  <depend>rospy</depend>
+  
+  <depend>zeus_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+
+  <depend>roslint</depend>
+  <depend>pcl_conversions</depend>
+  <depend>pcl_ros</depend>
+
 </package>
