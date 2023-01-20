@@ -4,7 +4,7 @@ project(voxblox_ros)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++17)
 
 set(CMAKE_CFG_PATH ${CMAKE_CURRENT_LIST_DIR}/../../Kimera-Semantics/kimera_semantics_ros/cfg)
 add_definitions(-DCFG_PATH="${CMAKE_CFG_PATH}")

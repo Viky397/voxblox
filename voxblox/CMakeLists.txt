@@ -4,7 +4,7 @@ project(voxblox)
 find_package(catkin_simple REQUIRED )
 catkin_simple(ALL_DEPS_REQUIRED)
 
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++17)
 
 ############
 # PROTOBUF #
