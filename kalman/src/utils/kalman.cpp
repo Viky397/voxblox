@@ -200,7 +200,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGB> > KalmanTracker::filter(std::vecto
             refines += *pcd_refine;
         } else {
         	std::cout << "[JQ8] Checking unassociated object " << X[i].ID << std::endl;
-        	if (X[i].expectedToObserve(robot_pose2+Pose2(0.43,0,0), 75) && !X[i].is_new) {
+        	if (X[i].expectedToObserve(robot_pose2, 75) && !X[i].is_new) {
         		X[i].set_type(0);
         		X[i].updateProbability(100, 0.00001);
         		X[i].new_obs.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -454,7 +454,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
             pcl::fromROSMsg(dets[dets_indices[j]].cloud, *cloud_pcl);
 
             Eigen::Matrix4f sc_tf;
-            float conf = matchPCDs(cloud_pcl, X[i], 60, sc_tf);
+            float conf = matchPCDs(cloud_pcl, X[i], 20, sc_tf);
             double d_sm = norm(sc_tf);
 
             Eigen::Matrix4f sc_body = T.inverse() * sc_tf * T;

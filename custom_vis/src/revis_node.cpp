@@ -40,8 +40,8 @@ public:
 			downsample_ = 0;
 
 		// subscribers
-		s_tracked_objects_ = nh_.subscribe("/kimera_semantics_node/Objects/TrackedObjects",10,&Revis::TrackedObjectsCallback, this);
-		s_observations_ = nh_.subscribe("/kimera_semantics_node/Objects/Observations",10,&Revis::ObservationsCallback, this);
+		s_tracked_objects_ = nh_.subscribe("/pocd_slam_node/Objects/TrackedObjects",10,&Revis::TrackedObjectsCallback, this);
+		s_observations_ = nh_.subscribe("/pocd_slam_node/Objects/Observations",10,&Revis::ObservationsCallback, this);
 
         // publishers
 		p_tracked_objects_ = nh_.advertise<visualization_msgs::MarkerArray>(
@@ -238,7 +238,7 @@ public:
 
 		ProcessDetections(bbs, msg_new, msg_label_new, msg_predict_new, objects, true);
 		pcl_conversions::toPCL(msg->header, objects->header);
-
+		objects->header.frame_id = "map";
 		p_observations_.publish(msg_new);
 		p_observations_cloud_.publish(objects);
 		// p_observations_label_.publish(msg_label_new);

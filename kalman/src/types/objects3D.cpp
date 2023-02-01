@@ -33,6 +33,16 @@ double Object::getAge(double t) {
 
 std::vector<double> Object::mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pcl) {
 	auto cloud_merged = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB> >(*cloud + *cloud_pcl);
+	zeus_pcl::PointCloudPtr cloud_merged_temp(new zeus_pcl::PointCloud());
+	zeus_pcl::PointCloudPtr cloud_prev(new zeus_pcl::PointCloud());
+	zeus_pcl::fromPCLRGB(*cloud_merged, cloud_merged_temp);
+	zeus_pcl::fromPCLRGB(*cloud, cloud_prev);
+	auto bbox_new = zeus_pcl::getBBox(cloud_merged_temp);
+
+	if (bbox_new[3] > 3.5 || bbox_new[4] > 3.5) {
+		return zeus_pcl::getBBox(cloud_prev);
+	}
+
 	cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
 
     pcl::UniformSampling<pcl::PointXYZRGB> filter;
@@ -40,12 +50,7 @@ std::vector<double> Object::mergeNewCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr
 	filter.setRadiusSearch(0.03f);
 	filter.filter(*cloud);
 
-	zeus_pcl::PointCloudPtr cloud_merged_pcl(new zeus_pcl::PointCloud());
-	zeus_pcl::fromPCLRGB(*cloud, cloud_merged_pcl);
-
-	auto bbox = zeus_pcl::getBBox(cloud_merged_pcl);
-
-	return bbox;
+	return bbox_new;
 }
 
 void Object::updateProbability(double change, double std_change) {
@@ -140,12 +145,12 @@ bool Object::expectedToObserve(Pose2 cam_pose, float fov) {
 	for (const auto& p : samples->points) {
 		Pose2 lm(p.x, p.y, 0);
 		Pose2 T_c_l = lm - cam_pose;
-		if (T_c_l.x() > 0.1 && T_c_l.norm() < 2.4 && fabs(T_c_l.y() / T_c_l.x()) < fabs(fov*0.9/2.0/45)) {
+		if (T_c_l.x() > 0.1 && T_c_l.norm() < 6 && fabs(atan2(T_c_l.y(), T_c_l.x()))/M_PI*180 < fabs(fov*0.85/2.0)) {
 			num_pts_expected++;
 		}
 	}
 
-	if ((num_pts_expected / samples->points.size()) > 0.2) return true;
+	if ((num_pts_expected / samples->points.size()) > 0.35) return true;
 
 	return false;
 }
