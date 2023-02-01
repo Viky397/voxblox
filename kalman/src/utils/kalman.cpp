@@ -445,7 +445,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
     	//std::cout << "[JQ10] Object: " << X[i].ID << std::endl;
         for (uint j = 0; j < M; j++) {
         	double d_euclid = dist(x, dets[dets_indices[j]]);
-        	if (d_euclid > 10*metricGate) {
+        	if (d_euclid > 3*metricGate) {
         		costMatrix(i, j) = INF;
         		continue;
         	}
@@ -454,7 +454,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
             pcl::fromROSMsg(dets[dets_indices[j]].cloud, *cloud_pcl);
 
             Eigen::Matrix4f sc_tf;
-            float conf = matchPCDs(cloud_pcl, X[i], 20, sc_tf);
+            float conf = matchPCDs(cloud_pcl, X[i], 10, sc_tf);
             double d_sm = norm(sc_tf);
 
             Eigen::Matrix4f sc_body = T.inverse() * sc_tf * T;
