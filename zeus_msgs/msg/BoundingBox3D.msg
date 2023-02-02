@@ -10,6 +10,9 @@ float32 yaw
 int32 type
 float32 confidence
 float32 objectness
+float32 detection_idx
+float32 alpha
+float32 beta
 float32[] class_confidences
 int32 ID
 int32 camera

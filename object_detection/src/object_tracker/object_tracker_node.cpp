@@ -173,7 +173,7 @@ void KalmanTrackerNode::initialize_transforms() {
 	//ROS_INFO_STREAM("[OBJ] object_tracker transforms initialized");
 }
 
-void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurements, double std) {
+void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurements, double std, bool merge) {
 	auto& objects = kalmantracker->get_mutable_object_list();
 	updateObjectLUT();
 	for (const auto& pair : measurements) {
@@ -184,7 +184,7 @@ void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurement
 		obj.updateProbability(pair.second, std);
 
 		std::cout << "[JQ10] Object " << obj.ID <<  " gets change of " << fabs(pair.second) << std::endl;
-		if (fabs(pair.second) < 0.125) {
+		if (fabs(pair.second) < 0.125 && merge) {
 			auto bbox = obj.mergeNewCloud(obj.new_obs);
 			std::cout << "[JQ10]    merge in observation" << std::endl;
 			obj.x_hat(0, 0) = bbox[0];
@@ -220,6 +220,9 @@ void convertToRosMessage(const std::vector<Object>& object_list,
 		detection.is_new = object_list[i].is_new;
 		detection.change_sign = object_list[i].change_sign;
 		detection.consistency = object_list[i].mu;
+		detection.detection_idx = object_list[i].detection_idx;
+		detection.alpha = object_list[i].a;
+		detection.beta = object_list[i].b;
 
 		sensor_msgs::PointCloud2 cloud_msg;
 		pcl::toROSMsg(*object_list[i].cloud, cloud_msg);

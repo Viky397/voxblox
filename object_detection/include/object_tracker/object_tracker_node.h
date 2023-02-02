@@ -108,7 +108,7 @@ class KalmanTrackerNode {
     	return kalmantracker->get_mutable_object_list().size();
     }
 
-    void updateObjectConfidence(std::map<int, double> measurements, double std);
+    void updateObjectConfidence(std::map<int, double> measurements, double std, bool merge=true);
 
     void updateObjectLUT() {
     	object_id_idx_lut_.clear();
