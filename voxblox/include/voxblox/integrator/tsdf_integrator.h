@@ -106,6 +106,11 @@ class TsdfIntegratorBase {
 								   FloatVector& tsdf_changes,
                                    const bool freespace_points = false) = 0;
 
+
+  virtual float calculateTSDFChange(const Transformation& T_G_C,
+                           const Pointcloud& ptcloud_C, const Colors& colors,
+  						   FloatVector& tsdf_changes) { return 0; }
+
   /// Returns a CONST ref of the config.
   const Config& getConfig() const { return config_; }
 

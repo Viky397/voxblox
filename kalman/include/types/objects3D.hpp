@@ -60,7 +60,7 @@ class Object {
     Eigen::MatrixXd y_prev = Eigen::MatrixXd::Zero(3, 1);
     float w = 0, l = 0, h = 0, yaw = 0;                     /*!< Shape of the (3D) bounding box, yaw = orient about z */
     int type = 0;                                           /*!< Which state is the object most likely in */
-    float confidence = 0.0;                                 /*!< Confidence level for the object: \f$\in [0, 1] \f$ */
+    double confidence = 0.0;                                 /*!< Confidence level for the object: \f$\in [0, 1] \f$ */
     int ID = 0;                                             /*!< A unique identifier for each object */
     int filter_length = 5;                                  /*!< Only used for detecting flashing red lights. */
     std::deque<int> past_types;                             /*!< Only used for detecting flashing red lights. */
@@ -72,10 +72,17 @@ class Object {
     double delta_t = 0.1;                                   /*!< current_time - last_observed_time */
     double first_observed_time = -1;
     double last_updated = -1;
+
     double a = 2.0;
     double b = 1.0;
     double mu = 0.0;
     double sig = 0.5;
+
+    double a_bk = 2.0;
+    double b_bk = 1.0;
+    double mu_bk = 0.0;
+    double sig_bk = 0.5;
+    double confidence_bk = 0.0;
 
     int life = 0;
 
@@ -87,6 +94,34 @@ class Object {
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr new_obs = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
+
+
+    void backupModel() {
+		a_bk = a;
+		b_bk = b;
+		mu_bk = mu;
+		sig_bk = sig;
+		confidence_bk = confidence;
+
+		initPrior();
+    }
+
+	void restoreModel() {
+		a = a_bk;
+		b = b_bk;
+		mu = mu_bk;
+		sig = sig_bk;
+		confidence = confidence_bk;
+	}
+
+	double getConfidence() const {
+		return confidence;
+	}
+
+	std::vector<double> getBetaParams() const {
+		return std::vector<double> {a, b};
+	}
+
 
     /*!
        \brief Returns the most likely object state (type)
@@ -136,6 +171,8 @@ class Object {
     void initPrior() {
     	a = 2;
     	b = 1;
+	    mu = 0.0;
+	    sig = 0.5;
     	confidence = a / (a + b);
     }
 

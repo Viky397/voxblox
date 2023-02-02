@@ -67,6 +67,10 @@ class PocdTsdfServer {
     // Do nothing.
   }
 
+  float calculateTSDFChange(const Transformation& T_G_C,
+                           const Pointcloud& ptcloud_C, const Colors& colors,
+						   FloatVector& tsdf_changes);
+
   void publishAllUpdatedTsdfVoxels();
   void publishTsdfSurfacePoints();
   void publishTsdfOccupiedNodes();

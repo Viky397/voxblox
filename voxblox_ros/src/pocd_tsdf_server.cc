@@ -438,6 +438,16 @@ float PocdTsdfServer::integratePointcloud(const Transformation& T_G_C,
   return ret;
 }
 
+
+float PocdTsdfServer::calculateTSDFChange(const Transformation& T_G_C,
+                         const Pointcloud& ptcloud_C, const Colors& colors,
+						   FloatVector& tsdf_changes) {
+	CHECK_EQ(ptcloud_C.size(), colors.size());
+	float ret = tsdf_integrator_->calculateTSDFChange(T_G_C, ptcloud_C, colors,
+	                                     tsdf_changes);
+	return ret;
+}
+
 void PocdTsdfServer::publishAllUpdatedTsdfVoxels() {
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;

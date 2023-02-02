@@ -106,6 +106,42 @@ class KalmanTrackerNode {
 
     void updateObjectConfidence(std::map<int, double> measurements, double std);
 
+    void updateObjectLUT() {
+    	object_id_idx_lut_.clear();
+    	auto& objects = kalmantracker->get_mutable_object_list();
+    	for (size_t idx(0); idx<objects.size(); idx++) {
+    		object_id_idx_lut_[objects[idx].ID] = idx;
+    	}
+    }
+
+    void backupObjectModel(int idx) {
+    	updateObjectLUT();
+    	auto& objects = kalmantracker->get_mutable_object_list();
+    	objects.at(object_id_idx_lut_.at(idx)).backupModel();
+    }
+
+    void restoreObjectModel(int idx) {
+    	updateObjectLUT();
+    	auto& objects = kalmantracker->get_mutable_object_list();
+    	objects.at(object_id_idx_lut_.at(idx)).restoreModel();
+    }
+
+    double getObjectConf(int idx) {
+    	updateObjectLUT();
+    	auto& objects = kalmantracker->get_mutable_object_list();
+    	return objects.at(object_id_idx_lut_.at(idx)).getConfidence();
+    }
+
+    std::vector<double> getObjectBetaParams(int idx) {
+    	updateObjectLUT();
+    	auto& objects = kalmantracker->get_mutable_object_list();
+    	return objects.at(object_id_idx_lut_.at(idx)).getBetaParams();
+    }
+
+    int numObjects() {
+    	return kalmantracker->get_mutable_object_list().size();
+    }
+
  private:
     Eigen::Matrix4d Tic2 = Eigen::Matrix4d::Identity();     /*!< Transform from c2 to imu_link */
     zeus_tf::tfBufferPtr tfBuffer;
@@ -117,6 +153,8 @@ class KalmanTrackerNode {
     ros::Publisher sm_target_pub_;
     ros::Publisher sm_source_pub_;
     ros::Publisher sm_refined_pub_;
+
+    std::map<int, size_t> object_id_idx_lut_;
 };
 
 }

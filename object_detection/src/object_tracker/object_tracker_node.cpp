@@ -174,15 +174,12 @@ void KalmanTrackerNode::initialize_transforms() {
 
 void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurements, double std) {
 	auto& objects = kalmantracker->get_mutable_object_list();
-	std::map<int, size_t> id_idx_lut;
-	for (size_t idx(0); idx<objects.size(); idx++) {
-		id_idx_lut[objects[idx].ID] = idx;
-	}
+	updateObjectLUT();
 	for (const auto& pair : measurements) {
-		if (id_idx_lut.count(pair.first) == 0) {
+		if (object_id_idx_lut_.count(pair.first) == 0) {
 			throw std::runtime_error("ERROR: Object index not found!");
 		}
-		auto& obj = objects.at(id_idx_lut.at(pair.first));
+		auto& obj = objects.at(object_id_idx_lut_.at(pair.first));
 		obj.updateProbability(pair.second, std);
 
 		std::cout << "[JQ10] Object " << obj.ID <<  " gets change of " << fabs(pair.second) << std::endl;
