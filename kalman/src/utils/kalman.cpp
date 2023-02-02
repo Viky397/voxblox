@@ -73,6 +73,7 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
 	for (auto& obj : X) {
 		obj.is_observed = false;
 		obj.is_new = false;
+		obj.detection_idx = -1;
 	}
     indices = std::vector<int>(X.size(), -1);
     auto change_signs = std::vector<float>(X.size(), 0);
@@ -107,6 +108,7 @@ void KalmanTracker::association(const std::vector<zeus_msgs::BoundingBox3D>& det
             X[i].delta_t = current_time - X[i].last_observed_time;
             X[i].last_observed_time = current_time;
             X[i].is_observed = true;
+            X[i].detection_idx = indices[i];
             X[i].change_sign = 1;
             //std::cout << "[JQ30]   object: " << i << " change is " <<  change_signs[i] << std::endl;
         }

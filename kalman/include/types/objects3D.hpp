@@ -84,6 +84,8 @@ class Object {
     double sig_bk = 0.5;
     double confidence_bk = 0.0;
 
+    int detection_idx = -1;
+
     int life = 0;
 
     bool inlier = true;

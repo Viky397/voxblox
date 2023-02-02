@@ -121,6 +121,7 @@ zeus_msgs::Detections3D KalmanTrackerNode::track(const zeus_msgs::Detections3D &
 												 const Eigen::Matrix4f& robot_pose,
 												 bool prune_by_confidence) {
 	std::cout << "Raw det received " << det.bbs.size() << std::endl;
+	std::cout << "Current tracked objects " << numObjects() << std::endl;
 	auto start = std::chrono::high_resolution_clock::now();
 	std::vector<zeus_msgs::BoundingBox3D> dets = det.bbs;
 	//zeus_tf::get_odom_tf(*odom, Toi);

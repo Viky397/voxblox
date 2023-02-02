@@ -69,8 +69,8 @@ void Object::updateProbability(double change, double std_change) {
 
 	//s_weight = 0;
 
-	std::cout << "[JQ12]   inlier " << inlier << std::endl;
-	std::cout << "[JQ12]   s_weight " << s_weight << std::endl;
+	//std::cout << "[JQ12]   inlier " << inlier << std::endl;
+	//std::cout << "[JQ12]   s_weight " << s_weight << std::endl;
 
 	double tolerance = 20.0 * std_change;
 
@@ -81,7 +81,7 @@ void Object::updateProbability(double change, double std_change) {
 	double K1 = Kvals.first;
 	double K2 = Kvals.second;
 
-	std::cout << "[JQ12]   K1 " << K1 << "  K2 " << K2 << std::endl;
+	//std::cout << "[JQ12]   K1 " << K1 << "  K2 " << K2 << std::endl;
 
 	boost::math::normal_distribution<double> norm_dist(mu, sig);
 	boost::math::uniform_distribution<double> uniform_dist(0.0, tolerance);
@@ -97,7 +97,7 @@ void Object::updateProbability(double change, double std_change) {
 	C2 /= C_norm;
 
 
-	std::cout << "[JQ12]   C1 " << C1 << "  C2 " << C2 << std::endl;
+	//std::cout << "[JQ12]   C1 " << C1 << "  C2 " << C2 << std::endl;
 
 	inlier = C1>=C2 ? true : false;
 
@@ -125,11 +125,9 @@ void Object::updateProbability(double change, double std_change) {
 
 	confidence = a / (a + b);
 
-	//std::cout << "[JQ12]   confidence " << confidence << std::endl;
+	std::cout << "[JQ12]   confidence " << confidence << std::endl;
 
 	life++;
-
-	//std::cout << "[JQ]   updated static prob of " << confidence << std::endl;
 }
 
 bool Object::expectedToObserve(Pose2 cam_pose, float fov) {

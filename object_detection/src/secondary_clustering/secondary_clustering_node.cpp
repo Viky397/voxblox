@@ -11,6 +11,22 @@
 
 namespace object_detection {
 
+SecondaryClusteringNode::SecondaryClusteringNode(ros::NodeHandle nh) : nh_(nh) {
+	det_pub_ = nh_.advertise<zeus_msgs::Detections3D>("/Object/RawDetections3D", 1);
+	gp_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/Object/GroundPlane3D", 1);
+	gp_prior_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/Object/GroundPlanePrior3D", 1);
+	normal_line_pub_ = nh_.advertise<visualization_msgs::Marker>("/surface_normal", 1);
+
+	color_ = std::make_shared<Color>();
+	std::string color_profile = std::string(CFG_PATH) + "/object_class_prior_colour.csv";
+	std::cout << "[JQ7] Loading color profile from " << color_profile << std::endl;
+	color_ -> loadData(color_profile);
+
+    set_node_name();
+    get_ros_parameters();
+    initialize_transforms();
+}
+
 zeus_msgs::Detections3D SecondaryClusteringNode::cluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& scan, const Eigen::Matrix4d& T_oc) {
 	std::lock_guard<std::mutex> lock(pcd_mtx);
 

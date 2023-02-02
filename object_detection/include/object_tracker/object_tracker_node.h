@@ -104,6 +104,10 @@ class KalmanTrackerNode {
     	return kalmantracker;
     }
 
+    size_t numObjects() {
+    	return kalmantracker->get_mutable_object_list().size();
+    }
+
     void updateObjectConfidence(std::map<int, double> measurements, double std);
 
     void updateObjectLUT() {
@@ -114,16 +118,32 @@ class KalmanTrackerNode {
     	}
     }
 
-    void backupObjectModel(int idx) {
-    	updateObjectLUT();
+    void backupObjectModel(size_t ID) {
+    	//updateObjectLUT();
     	auto& objects = kalmantracker->get_mutable_object_list();
-    	objects.at(object_id_idx_lut_.at(idx)).backupModel();
+    	objects.at(object_id_idx_lut_.at(ID)).backupModel();
     }
 
-    void restoreObjectModel(int idx) {
-    	updateObjectLUT();
+    void backupAllObjectModel() {
+    	size_t N = numObjects();
     	auto& objects = kalmantracker->get_mutable_object_list();
-    	objects.at(object_id_idx_lut_.at(idx)).restoreModel();
+    	for (size_t n(0); n<N; n++) {
+        	objects.at(n).backupModel();
+    	}
+    }
+
+    void restoreObjectModel(size_t ID) {
+    	//updateObjectLUT();
+    	auto& objects = kalmantracker->get_mutable_object_list();
+    	objects.at(object_id_idx_lut_.at(ID)).restoreModel();
+    }
+
+    void restoreAllObjectModel() {
+    	size_t N = numObjects();
+    	auto& objects = kalmantracker->get_mutable_object_list();
+    	for (size_t n(0); n<N; n++) {
+        	objects.at(n).restoreModel();
+    	}
     }
 
     double getObjectConf(int idx) {
@@ -138,9 +158,7 @@ class KalmanTrackerNode {
     	return objects.at(object_id_idx_lut_.at(idx)).getBetaParams();
     }
 
-    int numObjects() {
-    	return kalmantracker->get_mutable_object_list().size();
-    }
+
 
  private:
     Eigen::Matrix4d Tic2 = Eigen::Matrix4d::Identity();     /*!< Transform from c2 to imu_link */
