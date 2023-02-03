@@ -447,7 +447,7 @@ Eigen::MatrixXd KalmanTracker::generateCostMatrixSM(const std::vector<zeus_msgs:
     	//std::cout << "[JQ10] Object: " << X[i].ID << std::endl;
         for (uint j = 0; j < M; j++) {
         	double d_euclid = dist(x, dets[dets_indices[j]]);
-        	if (d_euclid > 3*metricGate) {
+        	if (d_euclid > 4*metricGate) {
         		costMatrix(i, j) = INF;
         		continue;
         	}

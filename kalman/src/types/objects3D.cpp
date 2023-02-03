@@ -143,7 +143,7 @@ bool Object::expectedToObserve(Pose2 cam_pose, float fov) {
 	for (const auto& p : samples->points) {
 		Pose2 lm(p.x, p.y, 0);
 		Pose2 T_c_l = lm - cam_pose;
-		if (T_c_l.x() > 0.1 && T_c_l.norm() < 6 && fabs(atan2(T_c_l.y(), T_c_l.x()))/M_PI*180 < fabs(fov*0.85/2.0)) {
+		if (T_c_l.x() > 0.1 && T_c_l.norm() < 4 && fabs(atan2(T_c_l.y(), T_c_l.x()))/M_PI*180 < fabs(fov*0.85/2.0)) {
 			num_pts_expected++;
 		}
 	}

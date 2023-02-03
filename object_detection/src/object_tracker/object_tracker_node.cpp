@@ -184,7 +184,7 @@ void KalmanTrackerNode::updateObjectConfidence(std::map<int, double> measurement
 		obj.updateProbability(pair.second, std);
 
 		std::cout << "[JQ10] Object " << obj.ID <<  " gets change of " << fabs(pair.second) << std::endl;
-		if (fabs(pair.second) < 0.125 && merge) {
+		if (fabs(pair.second) < 0.06 && merge) {
 			auto bbox = obj.mergeNewCloud(obj.new_obs);
 			std::cout << "[JQ10]    merge in observation" << std::endl;
 			obj.x_hat(0, 0) = bbox[0];
